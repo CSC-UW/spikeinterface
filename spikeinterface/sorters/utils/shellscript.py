@@ -48,11 +48,7 @@ class ShellScript():
             raise Exception('Cannot write script. No path specified')
         with open(script_path, 'w') as f:
             f.write(self._script)
-        # Don't run as executable if we can't change permission (eg on SMB share for some reason)
-        try:
-            os.chmod(script_path, 0o744)
-        except PermissionError:
-            self._executable_script = False
+        os.chmod(script_path, 0o744)
 
     def start(self) -> None:
         if self._script_path is not None:
@@ -77,20 +73,11 @@ class ShellScript():
             if script_path.suffix == '':
                 script_log_path = script_log_path.parent / (script_log_path.name + '.txt')
 
-        # Deal with the case where `chmod +x script_path` raised a permission error
-        # darwin only
-        if self._executable_script:
-            cmd = str(script_path)
-        else:
-            if 'win' in sys.platform and sys.platform != 'darwin':
-                cmd = None
-                raise PermissionError(f"Can't run {script_path}: could not set permission")
-            else:
-                cmd = f"sh {script_path}"
-                # cmd = ["sh", str(script_path)]
-        print(f'RUNNING SHELL SCRIPT: {cmd}')
+        self.write(script_path)
+        cmd = str(script_path)
+        print('RUNNING SHELL SCRIPT: ' + cmd)
         self._start_time = time.time()
-        self._process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
+        self._process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
                                          universal_newlines=True)
         with open(script_log_path, 'w+') as script_log_file:
             for line in self._process.stdout:

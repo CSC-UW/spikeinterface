@@ -1,16 +1,14 @@
 from pathlib import Path
 import os
-import sys
 import numpy as np
 from typing import Union
 import shutil
-import json
 
 from ..basesorter import BaseSorter
 from ..kilosortbase import KilosortBase
-from ..utils import get_git_commit, ShellScript
+from ..utils import get_git_commit
 
-from spikeinterface.extractors import BinaryRecordingExtractor, KiloSortSortingExtractor
+from spikeinterface.extractors import BinaryRecordingExtractor
 
 PathType = Union[str, Path]
 
@@ -235,11 +233,8 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
             with (output_folder / fname).open("w") as f:
                 f.write(txt)
 
-        shutil.copyfile(
-            str(source_dir.parent / "utils" / "writeNPY.m"),
-            str(output_folder / "writeNPY.m"),
-        )
-        shutil.copyfile(
+        shutil.copy(str(source_dir.parent / "utils" / "writeNPY.m"), str(output_folder))
+        shutil.copy(
             str(source_dir.parent / "utils" / "constructNPYheader.m"),
-            str(output_folder / "constructNPYheader.m"),
+            str(output_folder),
         )
