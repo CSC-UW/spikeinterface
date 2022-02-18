@@ -230,7 +230,11 @@ def write_binary_recording(recording, file_paths=None, dtype=None, add_file_exte
     # use executor (loop or workers)
     func = _write_binary_chunk
     init_func = _init_binary_worker
-    init_args = (recording.to_dict(), rec_memmaps_dict, dtype)
+    n_jobs = ensure_n_jobs(recording, n_jobs=job_kwargs.get('n_jobs', 1))
+    if n_jobs == 1:
+        init_args = (recording, rec_memmaps_dict, dtype)
+    else:
+        init_args = (recording.to_dict(), rec_memmaps_dict, dtype)
     executor = ChunkRecordingExecutor(recording, func, init_func, init_args, verbose=verbose,
                                       job_name='write_binary_recording', **job_kwargs)
     executor.run()
@@ -333,7 +337,8 @@ def make_shared_array(shape, dtype):
         raise Exception('SharedMemory is available only for python>=3.8')
 
     dtype = np.dtype(dtype)
-    nbytes = shape[0] * shape[1] * dtype.itemsize
+    # nbytes = shape[0] * shape[1] * dtype.itemsize
+    nbytes = np.prod(shape) * dtype.itemsize
     shm = SharedMemory(name=None, create=True, size=nbytes)
     arr = np.ndarray(shape=shape, dtype=dtype, buffer=shm.buf)
     arr[:] = 0

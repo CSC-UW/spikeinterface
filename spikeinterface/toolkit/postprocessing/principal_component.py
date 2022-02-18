@@ -22,9 +22,9 @@ class WaveformPrincipalComponent(BaseWaveformExtractorExtension):
     """
     Class to extract principal components from a WaveformExtractor object.
     """
-    
+
     extension_name = 'principal_components'
-    
+
     def __init__(self, waveform_extractor):
         BaseWaveformExtractorExtension.__init__(self, waveform_extractor)
 
@@ -266,7 +266,7 @@ class WaveformPrincipalComponent(BaseWaveformExtractorExtension):
                 shape = (n_spike, p['n_components'])
             proj = np.zeros(shape, dtype=p['dtype'])
             np.save(projection_file, proj)
-            comp = np.load(projection_file, mmap_mode='r+')
+            comp = np.load(str(projection_file), mmap_mode='r+')
             projection_memmap[unit_id] = comp
 
         # run ...
