@@ -1,27 +1,32 @@
 # CSC-UW changes to vanilla SpikeInterface
-Updated 5/9/2022
+We should aim to one day use the official SpikeInterface!
 
+Detailed comparison: https://github.com/CSC-UW/spikeinterface/compare/master...wisc/dev
+
+Summary, updated 5/9/2022:
 - Allows concatenation of datasets with different sample rates. 
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/4af9fe5566b3145678982d5cbfb8d8f28ddc7139), [2](https://github.com/CSC-UW/spikeinterface/commit/0ecc2cab58195167a1799c97b1cd55deffa7ff48)
   - Why do we need this? Can you add the explanation here, Tom? 
-- Attempts to handle cases where user does not have permission to `chmod +x`? 
-  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/26cca16f9310ffc3e93c073fe64005779f2b3c09)
-  - Is this because `+x` needs to be set on `run_kilosort.sh`? 
-  - Should this be dealt with in SI, or this really a sysadmin issue? If the former, can we submit as a PR? 
 - Explicitly sets MKL BLAS and LAPACK shared object libraries, which is necessary on Linux per [#199](https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599).
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/1aae5e902c12e0560b54c1dc74fc43c238a3248e)
   - Perhaps we should submit a PR to spikeinterface / KiloSort install intstructions with info about how to obtain proper BLAS and LAPACK versions, then set the   relevant environment variables in `.bashrc`? Or is there a spikeinterface config file that users can add their BLAS and LAPACK locations to? Or can they be set as a keyword argument somewhere? Like in the Kilosort sorter class? 
 - Save diagnositc drift plots by default
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/66ddafa08b5f3f13b301c2ce2d5772d843af7cec)
   - Does Kilosort automatically save plots if this `plotDir` option is specified? Here we edit the `kilosort2_5_master.m`, but does this only work because our CSC-UW/Kilosort fork has corresponding changes that check for this `plotDir` option? If so, is there a way that only one repository (Kilosort or SpikeInterface) can be home to all the commits needed for this functionality? Otherwise we will never be able to get rid of one fork as long as the other exists.
-- Allow specification of lambda parameter value from within SpikeInterface
+- Expose lambda parameter to SpikeInterface
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/10dc6a0ded76b750ed5e546625a4bdcb07a0257d)
+  - This seems like it would be widely useful as a PR. 
+- Expose do_correction option to SpikeInterface
+  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/89b8c44112a81100029b7a54123ba44ee8f2b3fd)
   - This seems like it would be widely useful as a PR. 
 - On UNIX, explicitly set the MATLAB shell to bash. 
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/832d00fd6fa4ffb6da89d10dad91d3e8bb7144fa)
   - Do we need to do this to prevent MATLAB from using Fish? Because Fish is not POSIX-compliant? If so, would this be widely useful as PR? 
 
-It would be great if we could just use the official SpikeInterface!
+### Reverted changes
+- Attempts to handle cases where user does not have permission to `chmod +x`? 
+  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/26cca16f9310ffc3e93c073fe64005779f2b3c09)
+  - Reversion: [1](https://github.com/CSC-UW/spikeinterface/commit/0b5987fcb58283352ccd6d7dc71cab4541f23cdf)
 
 # SpikeInterface: a unified framework for spike sorting
 
