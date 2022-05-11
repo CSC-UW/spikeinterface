@@ -3,16 +3,17 @@ We should aim to one day use the official SpikeInterface!
 
 Detailed comparison: https://github.com/CSC-UW/spikeinterface/compare/master...wisc/dev
 
-Summary, updated 5/9/2022:
-- Allows concatenation of datasets with different sample rates. 
-  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/4af9fe5566b3145678982d5cbfb8d8f28ddc7139), [2](https://github.com/CSC-UW/spikeinterface/commit/0ecc2cab58195167a1799c97b1cd55deffa7ff48)
-  - Why do we need this? Can you add the explanation here, Tom? 
+Summary, updated 5/11/2022:
 - Explicitly sets MKL BLAS and LAPACK shared object libraries, which is necessary on Linux per [#199](https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599).
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/1aae5e902c12e0560b54c1dc74fc43c238a3248e)
   - Perhaps we should submit a PR to spikeinterface / KiloSort install intstructions with info about how to obtain proper BLAS and LAPACK versions, then set the   relevant environment variables in `.bashrc`? Or is there a spikeinterface config file that users can add their BLAS and LAPACK locations to? Or can they be set as a keyword argument somewhere? Like in the Kilosort sorter class? 
 - Save diagnositc drift plots by default
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/66ddafa08b5f3f13b301c2ce2d5772d843af7cec)
-  - Does Kilosort automatically save plots if this `plotDir` option is specified? Here we edit the `kilosort2_5_master.m`, but does this only work because our CSC-UW/Kilosort fork has corresponding changes that check for this `plotDir` option? If so, is there a way that only one repository (Kilosort or SpikeInterface) can be home to all the commits needed for this functionality? Otherwise we will never be able to get rid of one fork as long as the other exists.
+
+  - Vanilla Kilosort does not save any of the plots generated during drift correction when run from spikeinterface. 
+  In our CSC-UW fork (branch wisc/2.5/dev) [it does](https://github.com/CSC-UW/Kilosort/commit/d74018a6566b8aa22fc68fa75f0e97a4df2dcac1) when the `ops` structure contains a `plotDir` entry set to the path to output debugging plots. No plot is saved if `ops.plotDir` is not specified or is set to `false`
+  - This commit sets `ops.PlotDir` to `<kilosort_output_dir>/plots_ks`.
+  - (TODO) We can get rid of this commit by always saving debugging plots in CSC-UW/Kilosort `datashift2.m` file.
 - Expose lambda parameter to SpikeInterface
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/10dc6a0ded76b750ed5e546625a4bdcb07a0257d)
   - This seems like it would be widely useful as a PR. 
@@ -21,7 +22,12 @@ Summary, updated 5/9/2022:
   - This seems like it would be widely useful as a PR. 
 - On UNIX, explicitly set the MATLAB shell to bash. 
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/832d00fd6fa4ffb6da89d10dad91d3e8bb7144fa)
-  - Do we need to do this to prevent MATLAB from using Fish? Because Fish is not POSIX-compliant? If so, would this be widely useful as PR? 
+  - We need to do this to prevent MATLAB from using Fish. Otherwise [this](https://github.com/MouseLand/Kilosort/blob/74c64485d8dd0bc5dd976d7bf51a46873b08351f/utils/rezToPhy.m#L186) line fails with a `command not found` error. I (TB) don't understand why that is the case (and it doesn't happen when default shell is Zsh or Bash). I think this would be a useful PR but there might be a better way of adressing this, which applies to all sorters (it might even be an issue with Fish itself).
+
+### Changes merged in vanilla Spikeinterface 
+- Allows concatenation of datasets with different sample rates. 
+  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/4af9fe5566b3145678982d5cbfb8d8f28ddc7139), [2](https://github.com/CSC-UW/spikeinterface/commit/0ecc2cab58195167a1799c97b1cd55deffa7ff48)
+  - I needed this at some point to concatenating datasets from different runs for sorting , because sampling_rate slightly changes across SpikeGLX runs. This change is currently NOT reflected in ecephys_project_manager (which should fail when trying to concatenate across runs). 
 
 ### Reverted changes
 - Attempts to handle cases where user does not have permission to `chmod +x`? 
