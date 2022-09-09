@@ -8,17 +8,17 @@ https://github.com/kwikteam/phy-doc/blob/master/docs/kwik-model.md
 04/08/20
 """
 
+from pathlib import Path
+
 import numpy as np
+
 from spikeinterface.core import (BaseRecording, BaseSorting,
                                  BaseRecordingSegment, BaseSortingSegment,
                                  read_python)
-
-import numpy as np
-from pathlib import Path
+from spikeinterface.core.core_tools import define_function_from_class
 
 try:
     import h5py
-
     HAVE_H5PY = True
 except ImportError:
     HAVE_H5PY = False
@@ -26,11 +26,26 @@ except ImportError:
 
 # noinspection SpellCheckingInspection
 class KlustaSortingExtractor(BaseSorting):
+    """Load Klusta format data as a sorting extractor.
+
+    Parameters
+    ----------
+    file_or_folder_path : str or Path
+        Path to the ALF folder.
+    exclude_cluster_groups: list or str, optional
+        Cluster groups to exclude (e.g. "noise" or ["noise", "mua"]).
+
+    Returns
+    -------
+    extractor : KlustaSortingExtractor
+        The loaded data.
+    """
+
     extractor_name = 'KlustaSortingExtractor'
     installed = HAVE_H5PY  # check at class level if installed or not
     installation_mesg = "To use the KlustaSortingExtractor install h5py: \n\n pip install h5py\n\n"  # error message when not installed
-    is_writable = True
     mode = 'file_or_folder'
+    name = "klusta"
 
     default_cluster_groups = {0: 'Noise', 1: 'MUA', 2: 'Good', 3: 'Unsorted'}
 
@@ -112,6 +127,7 @@ class KlustaSortingExtractor(BaseSorting):
 
         BaseSorting.__init__(self, sampling_frequency, unit_ids)
         self.is_dumpable = False
+        self.extra_requirements.append('h5py')
 
         self.add_sorting_segment(KlustSortingSegment(unit_ids, spiketrains))
 
@@ -138,9 +154,4 @@ class KlustSortingSegment(BaseSortingSegment):
         return times
 
 
-def read_klusta(*args, **kwargs):
-    sorting = KlustaSortingExtractor(*args, **kwargs)
-    return sorting
-
-
-read_klusta.__doc__ = KlustaSortingExtractor.__doc__
+read_klusta = define_function_from_class(source_class=KlustaSortingExtractor, name="read_klusta")

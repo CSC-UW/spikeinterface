@@ -4,10 +4,10 @@ channels:
 dependencies:
   - python=3.8
   - pip<21
-  - git-annex
+  #- git-annex
   - datalad
   - pyqt=5
-  - numpy=1.20
+  - numpy=1.21
   - pip:
     - joblib
     - tqdm
@@ -30,5 +30,8 @@ dependencies:
     - numpydoc
     - numpy<1.22
     - hdbscan
-    - numba==0.54.1
+    - numba
     - git+https://github.com/SpikeInterface/spikeinterface.git
+    - sphinx_rtd_theme
+    - sphinx_gallery
+    - numpydoc

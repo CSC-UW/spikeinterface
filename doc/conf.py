@@ -46,8 +46,6 @@ folders =  [
 
     '../examples/modules/sorters/tridesclous_output',
 
-    '../examples/modules/toolkit/waveforms_mearec',
-
     '../examples/modules/widgets/waveforms_mearec',
 
 
@@ -74,6 +72,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx_gallery.gen_gallery',
     'numpydoc',
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.extlinks",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -120,11 +120,22 @@ sphinx_gallery_conf = {
     'subsection_order': ExplicitOrder([
                                         '../examples/modules/core/',
                                         '../examples/modules/extractors/',
-                                       '../examples/modules/toolkit',
+                                       '../examples/modules/preprocessing',
                                        '../examples/modules/sorters',
+                                       '../examples/modules/postprocessing',
+                                       '../examples/modules/qualitymetrics',
                                        '../examples/modules/comparison',
                                        '../examples/modules/widgets',
                                        ]),
     'within_subsection_order': FileNameSortKey,
     'ignore_pattern': '/generate_',
+}
+
+intersphinx_mapping = {
+    "neo": ("https://neo.readthedocs.io/en/stable/", None),
+    "probeinterface": ("https://probeinterface.readthedocs.io/en/stable/", None),
+}
+
+extlinks = {
+    "probeinterface": ("https://probeinterface.readthedocs.io/", "%s"),
 }

@@ -1,21 +1,22 @@
-if __name__ != '__main__':
-    import matplotlib
-
-    matplotlib.use('Agg')
-
-from spikeinterface import download_dataset
-import spikeinterface.extractors as se
-
-from spikeinterface.widgets.utils import get_unit_colors
+from spikeinterface.widgets.utils import get_some_colors
 
 
-def test_get_unit_colors():
-    local_path = download_dataset(remote_path='mearec/mearec_test_10s.h5')
-    sorting = se.MEArecSortingExtractor(local_path)
+def test_get_some_colors():
+    
+    keys = ['a', 'b', 'c', 'd']
+    
+    colors = get_some_colors(keys, color_engine='auto')
+    # print(colors)
 
-    colors = get_unit_colors(sorting)
-    print(colors)
+    colors = get_some_colors(keys, color_engine='distinctipy')
+    # print(colors)
+
+    colors = get_some_colors(keys, color_engine='matplotlib')
+    # print(colors)
+
+    colors = get_some_colors(keys, color_engine='colorsys')
+    # print(colors)
     
 
 if __name__ == '__main__':
-    test_get_unit_colors()
+    test_get_some_colors()

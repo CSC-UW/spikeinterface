@@ -3,21 +3,24 @@ Some utils to handle parallel jobs on top of job and/or loky
 """
 from pathlib import Path
 import numpy as np
+import platform
 
 import joblib
 import sys
-from tqdm import tqdm
+import contextlib
+from tqdm.auto import tqdm
+
 
 # import loky
 from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
 
-_shared_job_kwargs_doc = \
-    """**job_kwargs: keyword arguments for parallel processing:
-            * chunk_size or chunk_memory, or total_memory
+_shared_job_kwargs_doc = """**job_kwargs: keyword arguments for parallel processing:
+            * chunk_duration or chunk_size or chunk_memory or total_memory
                 - chunk_size: int
-                    number of samples per chunk
+                    Number of samples per chunk
                 - chunk_memory: str
-                    Memory usage for each job (e.g. '100M', '1G'
+                    Memory usage for each job (e.g. '100M', '1G')
                 - total_memory: str
                     Total memory usage (e.g. '500M', '2G')
                 - chunk_duration : str or float or None
@@ -26,10 +29,31 @@ _shared_job_kwargs_doc = \
                 Number of jobs to use. With -1 the number of jobs is the same as number of cores
             * progress_bar: bool
                 If True, a progress bar is printed
+            * mp_context: str or None
+                Context for multiprocessing. \It can be None (default), "fork" or "spawn". 
+                Note that "fork" is only available on UNIX systems
     """
     
-job_keys = ['n_jobs', 'total_memory', 'chunk_size', 'chunk_memory', 'chunk_duration', 'progress_bar', 'verbose']
+job_keys = ['n_jobs', 'total_memory', 'chunk_size', 'chunk_memory', 'chunk_duration', 'progress_bar', 
+            'mp_context', 'verbose']
 
+
+# from https://stackoverflow.com/questions/24983493/tracking-progress-of-joblib-parallel-execution
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_batch_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_batch_callback
+        tqdm_object.close()
 
 
 def divide_segment_into_chunks(num_frames, chunk_size):
@@ -53,7 +77,7 @@ def divide_segment_into_chunks(num_frames, chunk_size):
     return chunks
 
 
-def devide_recording_into_chunks(recording, chunk_size):
+def divide_recording_into_chunks(recording, chunk_size):
     all_chunks = []
     for segment_index in range(recording.get_num_segments()):
         num_frames = recording.get_num_samples(segment_index)
@@ -94,7 +118,8 @@ def ensure_n_jobs(recording, n_jobs=1):
     return n_jobs
 
 
-def ensure_chunk_size(recording, total_memory=None, chunk_size=None, chunk_memory=None, chunk_duration=None, n_jobs=1, **other_kwargs):
+def ensure_chunk_size(recording, total_memory=None, chunk_size=None, chunk_memory=None, chunk_duration=None, n_jobs=1, 
+                      **other_kwargs):
     """
     'chunk_size' is the traces.shape[0] for each worker.
 
@@ -196,6 +221,9 @@ class ChunkRecordingExecutor:
         Size of each chunk in number of samples. If 'total_memory' or 'chunk_memory' are used, it is ignored.
     chunk_duration : str or float or None
         Chunk duration in s if float or with units if str (e.g. '1s', '500ms')
+    mp_context : str or None
+        "fork" (default) or "spawn". If None, the context is taken by the recording.get_preferred_mp_context().
+        "fork" is only available on UNIX systems.
     job_name: str
         Job name
 
@@ -207,12 +235,18 @@ class ChunkRecordingExecutor:
 
     def __init__(self, recording, func, init_func, init_args, verbose=False, progress_bar=False, handle_returns=False,
                  n_jobs=1, total_memory=None, chunk_size=None, chunk_memory=None, chunk_duration=None,
-                 job_name=''):
-
+                 mp_context=None, job_name=''):        
         self.recording = recording
         self.func = func
         self.init_func = init_func
         self.init_args = init_args
+        
+        if mp_context is None:
+            mp_context = recording.get_preferred_mp_context()
+        if mp_context is not None and platform.system() == "Windows":
+            assert mp_context != "fork", "'fork' mp_context not supported on Windows!"
+                
+        self.mp_context = mp_context
 
         self.verbose = verbose
         self.progress_bar = progress_bar
@@ -227,13 +261,13 @@ class ChunkRecordingExecutor:
         self.job_name = job_name
 
         if verbose:
-            print(self.job_name, 'with', 'n_jobs', self.n_jobs, ' chunk_size', self.chunk_size)
+            print(self.job_name, 'with n_jobs =', self.n_jobs, 'and chunk_size =', self.chunk_size)
 
     def run(self):
         """
         Runs the defined jobs.
         """
-        all_chunks = devide_recording_into_chunks(self.recording, self.chunk_size)
+        all_chunks = divide_recording_into_chunks(self.recording, self.chunk_size)
 
         if self.handle_returns:
             returns = []
@@ -255,15 +289,15 @@ class ChunkRecordingExecutor:
                     returns.append(res)
         else:
             n_jobs = min(self.n_jobs, len(all_chunks))
-
             ######## Do you want to limit the number of threads per process?
             ######## It has to be done to speed up numpy a lot if multicores
             ######## Otherwise, np.dot will be slow. How to do that, up to you
             ######## This is just a suggestion, but here it adds a dependency
-            
+
             # parallel
             with ProcessPoolExecutor(max_workers=n_jobs,
                                      initializer=worker_initializer,
+                                     mp_context=mp.get_context(self.mp_context),
                                      initargs=(self.func, self.init_func, self.init_args)) as executor:
 
                 results = executor.map(function_wrapper, all_chunks)

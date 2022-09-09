@@ -2,6 +2,7 @@ import numpy as np
 
 from spikeinterface import download_dataset, get_global_dataset_folder
 from spikeinterface.extractors.neoextractors.neobaseextractor import NeoBaseRecordingExtractor
+from spikeinterface.extractors import get_neo_streams, get_neo_num_blocks
 
 gin_repo = 'https://gin.g-node.org/NeuralEnsemble/ephy_testing_data'
 local_folder = get_global_dataset_folder() / 'ephy_testing_data'
@@ -19,6 +20,10 @@ class CommonTestSuite:
 
 class RecordingCommonTestSuite(CommonTestSuite):
 
+    @staticmethod
+    def get_full_path(path):
+        return local_folder / path
+
     def test_open(self):
         for entity in self.entities:
 
@@ -27,9 +32,20 @@ class RecordingCommonTestSuite(CommonTestSuite):
             elif isinstance(entity, str):
                 path = entity
                 kwargs = {}
+                
+            # test streams and blocks retrieval
+            full_path = self.get_full_path(path)
 
-            rec = self.ExtractorClass(local_folder / path, **kwargs)
-            # print(rec)
+            extractor_name = self.ExtractorClass.name
+            print(f"Extractor name {extractor_name} - path {full_path}")
+            nblocks = get_neo_num_blocks(extractor_name, full_path)
+            stream_names, stream_ids = get_neo_streams(extractor_name, full_path)
+            
+            print(f"Num blocks: {nblocks}, Stream names: {stream_names}, Stream IDs: {stream_ids}")
+
+            rec = self.ExtractorClass(full_path, **kwargs)
+
+            assert hasattr(rec, 'extra_requirements')
 
             num_seg = rec.get_num_segments()
             num_chans = rec.get_num_channels()
@@ -57,9 +73,20 @@ class RecordingCommonTestSuite(CommonTestSuite):
                 assert rec.get_property('offset_to_uV') is not None
 
             if rec.get_property('gain_to_uV') is not None and rec.get_property('offset_to_uV') is not None:
-                trace_scaled = rec.get_traces(segment_index=segment_index, return_scaled=True)
+                trace_scaled = rec.get_traces(segment_index=segment_index, return_scaled=True, end_frame=2)
                 assert trace_scaled.dtype == 'float32'
+            
+                            
+    def test_neo_annotations(self):
+        for entity in self.entities:
 
+            if isinstance(entity, tuple):
+                path, kwargs = entity
+            elif isinstance(entity, str):
+                path = entity
+                kwargs = {}
+            if hasattr(self.ExtractorClass , "NeoRawIOClass"):
+                rec = self.ExtractorClass(self.get_full_path(path), all_annotations=True, **kwargs)
 
 class SortingCommonTestSuite(CommonTestSuite):
 

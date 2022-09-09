@@ -1,34 +1,51 @@
+import numpy as np
+
+import probeinterface as pi
+
 from spikeinterface import BaseEvent, BaseEventSegment
+from spikeinterface.core.core_tools import define_function_from_class
 
 from .neobaseextractor import NeoBaseRecordingExtractor
-import probeinterface as pi
-import numpy as np
 
 
 class MaxwellRecordingExtractor(NeoBaseRecordingExtractor):
     """
     Class for reading data from Maxwell device.
-    It handle MaxOne (old and new format) and MaxTwo.
-    
-    Based on neo.rawio.IntanRawIO
-    
+    It handles MaxOne (old and new format) and MaxTwo.
+
+    Based on :py:class:`neo.rawio.MaxwellRawIO`
+
     Parameters
     ----------
     file_path: str
-        Path to maxwell h5 file
-    stream_id: str or None
+        The file path to the maxwell h5 file.
+    stream_id: str, optional
+        If there are several streams, specify the stream id you want to load.
         For MaxTwo when there are several wells at the same time you
-        need to specify stream_id='well000' or 'well0001' or ...
-    rec_name: str or None
-        When the file contains several blocks (aka recordings) you need to specify the one
-        you want to extract. (rec_name='rec0000')
+        need to specify stream_id='well000' or 'well0001', etc.
+    stream_name: str, optional
+        If there are several streams, specify the stream name you want to load.
+    all_annotations: bool, optional, default: False
+        Load exhaustively all annotations from neo.
+    rec_name: str, optional
+        When the file contains several recordings you need to specify the one
+        you want to extract. (rec_name='rec0000').
     """
     mode = 'file'
     NeoRawIOClass = 'MaxwellRawIO'
+    name = "maxwell"
+    has_default_locations = True
 
-    def __init__(self, file_path, stream_id=None, rec_name=None):
-        neo_kwargs = {'filename': str(file_path)}
-        NeoBaseRecordingExtractor.__init__(self, stream_id=stream_id, rec_name=rec_name, **neo_kwargs)
+    def __init__(self, file_path, stream_id=None, stream_name=None, block_index=None, 
+                 all_annotations=False, rec_name=None):
+        neo_kwargs = self.map_to_neo_kwargs(file_path, rec_name)
+        NeoBaseRecordingExtractor.__init__(self, stream_id=stream_id, 
+                                           stream_name=stream_name,
+                                           block_index=block_index,
+                                           all_annotations=all_annotations, 
+                                           **neo_kwargs)
+
+        self.extra_requirements.append('h5py')
 
         # well_name is stream_id
         well_name = self.stream_id
@@ -37,25 +54,22 @@ class MaxwellRecordingExtractor(NeoBaseRecordingExtractor):
         probe = pi.read_maxwell(file_path, well_name=well_name, rec_name=rec_name)
         self.set_probe(probe, in_place=True)
         self.set_property("electrode", self.get_property("contact_vector")["electrode"])
-        self._kwargs = dict(file_path=str(file_path), stream_id=stream_id, rec_name=rec_name)
+        self._kwargs.update(dict(file_path=str(file_path), rec_name=rec_name))
 
-
-def read_maxwell(*args, **kwargs):
-    recording = MaxwellRecordingExtractor(*args, **kwargs)
-    return recording
-
-
-read_maxwell.__doc__ = MaxwellRecordingExtractor.__doc__
-
+    @classmethod
+    def map_to_neo_kwargs(cls, file_path, rec_name=None):
+        neo_kwargs = {'filename': str(file_path), 'rec_name': rec_name}
+        return neo_kwargs
 
 _maxwell_event_dtype = np.dtype([("frame", "int64"), ("state", "int8"), ("time", "float64")])
 
 
 class MaxwellEventExtractor(BaseEvent):
     """
-    Class for reading TTL events from Maxwell files
-
+    Class for reading TTL events from Maxwell files.
     """
+    name = "maxwell"
+
     def __init__(self, file_path):
         import h5py
         self.file_path = file_path
@@ -109,9 +123,5 @@ class MaxwellEventSegment(BaseEventSegment):
         return event
 
 
-def read_maxwell_event(*args, **kwargs):
-    event = MaxwellEventExtractor(*args, **kwargs)
-    return event
-
-
-read_maxwell_event.__doc__ = MaxwellEventExtractor.__doc__
+read_maxwell = define_function_from_class(source_class=MaxwellRecordingExtractor, name="read_maxwell")
+read_maxwell_event = define_function_from_class(source_class=MaxwellEventExtractor, name="read_maxwell_event")

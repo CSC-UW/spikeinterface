@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 import numpy as np
 import warnings
 
@@ -48,25 +48,28 @@ class BaseSorting(BaseExtractor):
     def get_num_segments(self):
         return len(self._sorting_segments)
 
-    def get_unit_spike_train(self,
-                             unit_id,
-                             segment_index: Union[int, None] = None,
-                             start_frame: Union[int, None] = None,
-                             end_frame: Union[int, None] = None,
-                             return_times: bool = False
-                             ):
+    def get_unit_spike_train(
+        self,
+        unit_id,
+        segment_index: Union[int, None] = None,
+        start_frame: Union[int, None] = None,
+        end_frame: Union[int, None] = None,
+        return_times: bool = False,
+    ):
         segment_index = self._check_segment_index(segment_index)
         segment = self._sorting_segments[segment_index]
-        spike_train = segment.get_unit_spike_train(
+        spike_frames = segment.get_unit_spike_train(
             unit_id=unit_id, start_frame=start_frame, end_frame=end_frame).astype("int64")
         if return_times:
             if self.has_recording():
                 times = self.get_times(segment_index=segment_index)
-                return times[spike_train]
+                return times[spike_frames]
             else:
-                return spike_train / self.get_sampling_frequency()
+                t_start = segment._t_start if segment._t_start is not None else 0
+                spike_times =  spike_frames / self.get_sampling_frequency()
+                return t_start + spike_times
         else:
-            return spike_train
+            return spike_frames
 
     def register_recording(self, recording):
         assert np.isclose(self.get_sampling_frequency(),
@@ -118,16 +121,35 @@ class BaseSorting(BaseExtractor):
                 warnings.warn(
                     "The registered recording will not be persistent on disk, but only available in memory")
                 cached.register_recording(self._recording)
-        else:
+        elif format == 'memory':
             from .numpyextractors import NumpySorting
             cached = NumpySorting.from_extractor(self)
-            
+        else:
+            raise ValueError(f'format {format} not supported')            
         return cached
 
     def get_unit_property(self, unit_id, key):
         values = self.get_property(key)
         v = values[self.id_to_index(unit_id)]
         return v
+
+    def get_total_num_spikes(self):
+        """
+        Get total number of spikes for each unit across segments.
+
+        Returns
+        -------
+        dict
+            Dictionary with unit_ids as key and number of spikes as values
+        """
+        num_spikes = {}
+        for unit_id in self.unit_ids:
+            n = 0
+            for segment_index in range(self.get_num_segments()):
+                st = self.get_unit_spike_train(unit_id=unit_id, segment_index=segment_index)
+                n += st.size
+            num_spikes[unit_id] = n
+        return num_spikes
 
     def select_units(self, unit_ids, renamed_unit_ids=None):
         """
@@ -149,6 +171,25 @@ class BaseSorting(BaseExtractor):
         sub_sorting = UnitsSelectionSorting(
             self, unit_ids, renamed_unit_ids=renamed_unit_ids)
         return sub_sorting
+    
+    def remove_units(self, remove_unit_ids):
+        """
+        Removes a subset of units
+
+        Parameters
+        ----------
+        remove_unit_ids :  numpy.array or list
+            List of unit ids to remove
+
+        Returns
+        -------
+        BaseSorting
+            Sorting object without removed units
+        """
+        from spikeinterface import UnitsSelectionSorting
+        new_unit_ids = self.unit_ids[~np.in1d(self.unit_ids, remove_unit_ids)]
+        new_sorting = UnitsSelectionSorting(self, new_unit_ids)
+        return new_sorting
 
     def remove_empty_units(self):
         """
@@ -198,23 +239,39 @@ class BaseSorting(BaseExtractor):
             spikes.append((spike_times, spike_labels))
         return spikes
 
-    def to_spike_vector(self):
+    def to_spike_vector(self, extremum_channel_inds=None):
         """
         Construct a unique structured numpy vector concatenating all spikes 
         with several fields: sample_ind, unit_index, segment_index.
 
         See also `get_all_spike_trains()`
+
+        Parameters
+        ----------
+        extremum_channel_inds: None or dict
+            If a dictionnary of unit_id to channel_ind is given then an extra field 'channel_ind'.
+            This can be convinient for computing spikes postion after sorter.
+            
+            This dict can be computed with `get_template_extremum_channel(we, outputs="index")`
         
         Returns
         -------
         spikes: np.array
             Structured numpy array ('sample_ind', 'unit_index', 'segment_index') with all spikes
+            Or ('sample_ind', 'unit_index', 'segment_index', 'channel_ind') if extremum_channel_inds
+            is given
+            
         """
         spikes_ = self.get_all_spike_trains(outputs='unit_index')
 
         n = np.sum([e[0].size for e in spikes_])
         spike_dtype = [('sample_ind', 'int64'), ('unit_ind',
                                                  'int64'), ('segment_ind', 'int64')]
+        
+        if extremum_channel_inds is not None:
+            spike_dtype += [('channel_ind', 'int64')]
+        
+        
         spikes = np.zeros(n, dtype=spike_dtype)
 
         pos = 0
@@ -224,6 +281,13 @@ class BaseSorting(BaseExtractor):
             spikes[pos:pos+n]['unit_ind'] = spike_labels
             spikes[pos:pos+n]['segment_ind'] = segment_index
             pos += n
+        
+
+        if extremum_channel_inds is not None:
+            ext_channel_inds = np.array([extremum_channel_inds[unit_id] for unit_id in self.unit_ids])
+            # vector way
+            spikes['channel_ind'] = ext_channel_inds[spikes['unit_ind']]
+
 
         return spikes
 
@@ -233,13 +297,28 @@ class BaseSortingSegment(BaseSegment):
     Abstract class representing several units and relative spiketrain inside a segment.
     """
 
-    def __init__(self):
+    def __init__(self, t_start=None):
+        self._t_start = t_start
         BaseSegment.__init__(self)
 
-    def get_unit_spike_train(self,
-                             unit_id,
-                             start_frame: Union[int, None] = None,
-                             end_frame: Union[int, None] = None,
-                             ) -> np.ndarray:
+    def get_unit_spike_train(
+        self,
+        unit_id,
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ) -> np.ndarray:
+        """Get the spike train for a unit.
+
+        Parameters
+        ----------
+        unit_id
+        start_frame: int, optional
+        end_frame: int, optional
+
+        Returns
+        -------
+        np.ndarray
+
+        """
         # must be implemented in subclass
         raise NotImplementedError

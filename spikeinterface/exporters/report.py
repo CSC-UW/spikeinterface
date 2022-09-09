@@ -4,7 +4,12 @@ import pandas as pd
 
 from spikeinterface.core.job_tools import _shared_job_kwargs_doc
 import spikeinterface.widgets as sw
-import spikeinterface.toolkit as st
+from spikeinterface.postprocessing import (compute_spike_amplitudes,
+                                           compute_principal_components,
+                                           compute_unit_locations,
+                                           get_template_extremum_channel, 
+                                           get_template_extremum_amplitude)
+from spikeinterface.qualitymetrics import compute_quality_metrics
 
 import matplotlib.pyplot as plt
 
@@ -42,9 +47,9 @@ def export_report(waveform_extractor, output_folder, remove_if_exists=False, for
 
     if we.is_extension('spike_amplitudes'):
         sac = we.load_extension('spike_amplitudes')
-        amplitudes = sac.get_amplitudes(outputs='by_unit')
+        amplitudes = sac.get_data(outputs='by_unit')
     else:
-        amplitudes = st.compute_spike_amplitudes(we, peak_sign=peak_sign, outputs='by_unit', **job_kwargs)
+        amplitudes = compute_spike_amplitudes(we, peak_sign=peak_sign, outputs='by_unit', **job_kwargs)
 
     output_folder = Path(output_folder).absolute()
     if output_folder.is_dir():
@@ -57,27 +62,31 @@ def export_report(waveform_extractor, output_folder, remove_if_exists=False, for
     # unit list
     units = pd.DataFrame(index=unit_ids)  #  , columns=['max_on_channel_id', 'amplitude'])
     units.index.name = 'unit_id'
-    units['max_on_channel_id'] = pd.Series(st.get_template_extremum_channel(we, peak_sign='neg', outputs='id'))
-    units['amplitude'] = pd.Series(st.get_template_extremum_amplitude(we, peak_sign='neg'))
+    units['max_on_channel_id'] = pd.Series(get_template_extremum_channel(we, peak_sign='neg', outputs='id'))
+    units['amplitude'] = pd.Series(get_template_extremum_amplitude(we, peak_sign='neg'))
     units.to_csv(output_folder / 'unit list.csv', sep='\t')
     
     # metrics
     if we.is_extension('quality_metrics'):
         qmc = we.load_extension('quality_metrics')
-        metrics = qmc._metrics
+        metrics = qmc.get_data()
     else:
         # compute principal_components if not done
         if not we.is_extension('principal_components'):
-            pca = st.compute_principal_components(we, load_if_exists=True,
-                                                  n_components=5, mode='by_channel_local')
-        metrics = st.compute_quality_metrics(we)
+            pca = compute_principal_components(we, load_if_exists=True,
+                                               n_components=5, mode='by_channel_local')
+        metrics = compute_quality_metrics(we)
     metrics.to_csv(output_folder / 'quality metrics.csv')
+
+    # pre-compute unit locations
+    if not we.is_extension('unit_locations'):
+        unit_locations = compute_unit_locations(we)
 
     unit_colors = sw.get_unit_colors(sorting)
 
     # global figures
     fig = plt.figure(figsize=(20, 10))
-    w = sw.plot_unit_localization(we, figure=fig, unit_colors=unit_colors)
+    w = sw.plot_unit_locations(we, figure=fig, unit_colors=unit_colors)
     fig.savefig(output_folder / f'unit_localization.{format}')
     if not show_figures:
         plt.close(fig)

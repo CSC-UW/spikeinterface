@@ -1,26 +1,40 @@
-from spikeinterface.core import BinaryRecordingExtractor, BaseRecordingSegment, BaseSorting, BaseSortingSegment
-from spikeinterface.core.core_tools import write_binary_recording
-from probeinterface import read_prb, write_prb
-
-import json
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
+from spikeinterface.core import BaseSorting, BaseSortingSegment
+from spikeinterface.core.core_tools import define_function_from_class
 
 try:
     import pandas as pd
-
     HAVE_PANDAS = True
 except:
     HAVE_PANDAS = False
 
 
 class ALFSortingExtractor(BaseSorting):
+    """Load ALF format data as a sorting extractor.
+
+    Parameters
+    ----------
+    folder_path : str or Path
+        Path to the ALF folder.
+    sampling_frequency : int, optional, default: 30000
+        The sampling frequency.
+
+    Returns
+    -------
+    extractor : ALFSortingExtractor
+        The loaded data.
+    """
+
     extractor_name = 'ALFSorting'
     installed = HAVE_PANDAS
-    is_writable = True
-    installation_mesg = "To use the SHYBRID extractors, install SHYBRID: \n\n pip install shybrid\n\n"
+    installation_mesg = "To use the ALF extractors, install pandas: \n\n pip install pandas\n\n"
+    name = "alf"
 
     def __init__(self, folder_path, sampling_frequency=30000):
+
         assert self.installed, self.installation_mesg
         # check correct parent folder:
         self._folder_path = Path(folder_path)
@@ -68,6 +82,8 @@ class ALFSortingExtractor(BaseSorting):
         BaseSorting.__init__(self, unit_ids=unit_ids, sampling_frequency=sampling_frequency)
         sorting_segment = ALFSortingSegment(spike_clusters, spike_times, sampling_frequency)
         self.add_sorting_segment(sorting_segment)
+
+        self.extra_requirements.append('pandas')
 
         # add properties
         for property_name, values in properties.items():
@@ -134,6 +150,4 @@ class ALFSortingSegment(BaseSortingSegment):
         return spike_frames[(spike_frames >= start_frame) & (spike_frames < end_frame)]
 
 
-def read_alf_sorting(folder_path, sampling_frequency=30000):
-    sorting = ALFSortingExtractor(folder_path, sampling_frequency=sampling_frequency)
-    return sorting
+read_alf_sorting = define_function_from_class(source_class=ALFSortingExtractor, name="read_alf_sorting")

@@ -1,63 +1,45 @@
-from .utils import get_unit_colors
+# check if backend are available
+try:
+    import matplotlib
+    HAVE_MPL = True
+except:
+    HAVE_MPL = False
 
-# basics
-from .timeseries import plot_timeseries, TimeseriesWidget
-from .rasters import plot_rasters, RasterWidget
-from .probemap import plot_probe_map, ProbeMapWidget
+try:
+    import sortingview
+    HAVE_SV = True
+except:
+    HAVE_SV = False
 
-# isi/ccg/acg
-from .isidistribution import plot_isi_distribution, ISIDistributionWidget
-from .correlograms import (plot_crosscorrelograms, CrossCorrelogramsWidget,
-                           plot_autocorrelograms, AutoCorrelogramsWidget)
+try:
+    import ipywidgets
+    HAVE_IPYW = True
+except:
+    HAVE_IPYW = False
 
-# peak activity
-from .activity import plot_peak_activity_map, PeakActivityMapWidget
 
-# drift/motion
-from .drift import (plot_drift_over_time, DriftOverTimeWidget,
-                    plot_pairwise_displacement, PairwiseDisplacementWidget,
-                    plot_displacement, DisplacementWidget)
+# theses import make the Widget.resgister() at import time
+if HAVE_MPL:
+    import spikeinterface.widgets.matplotlib
 
-# waveform/PC related
-from .unitwaveforms import plot_unit_waveforms, plot_unit_templates
-from .unitwaveformdensitymap import plot_unit_waveform_density_map, UnitWaveformDensityMapWidget
-from .amplitudes import plot_amplitudes_timeseries, plot_amplitudes_distribution
-from .principalcomponent import plot_principal_component
-from .unitlocalization import plot_unit_localization, UnitLocalizationWidget
+if HAVE_SV:
+    import spikeinterface.widgets.sortingview
 
-# units on probe
-from .unitprobemap import plot_unit_probe_map, UnitProbeMapWidget
-from .depthamplitude import plot_units_depth_vs_amplitude
+if HAVE_IPYW:
+    import spikeinterface.widgets.ipywidgets
 
-# comparison related
-from .confusionmatrix import plot_confusion_matrix, ConfusionMatrixWidget
-from .agreementmatrix import plot_agreement_matrix, AgreementMatrixWidget
-from .multicompgraph import (
-    plot_multicomp_graph, MultiCompGraphWidget,
-    plot_multicomp_agreement, MultiCompGlobalAgreementWidget,
-    plot_multicomp_agreement_by_sorter, MultiCompAgreementBySorterWidget)
-from .collisioncomp import (
-    plot_comparison_collision_pair_by_pair, ComparisonCollisionPairByPairWidget,
-    plot_comparison_collision_by_similarity,ComparisonCollisionBySimilarityWidget,
-    plot_study_comparison_collision_by_similarity, StudyComparisonCollisionBySimilarityWidget,
-    plot_study_comparison_collision_by_similarity_range, StudyComparisonCollisionBySimilarityRangeWidget,
-    StudyComparisonCollisionBySimilarityRangesWidget, plot_study_comparison_collision_by_similarity_ranges)
+# when importing widget list backend are already registered
+from .widget_list import *
 
-from .sortingperformance import plot_sorting_performance
+# general functions
+from .utils import get_some_colors, get_unit_colors, array_to_image
+from .base import set_default_plotter_backend, get_default_plotter_backend
 
-# ground truth study (=comparison over sorter)
-from .gtstudy import (StudyComparisonRunTimesWidget, plot_gt_study_run_times,
-    StudyComparisonUnitCountWidget, plot_gt_study_unit_counts,
-    plot_gt_study_performances, plot_gt_study_performances_averages, StudyComparisonPerformancesWidget,
-    StudyComparisonPerformancesAveragesWidget,
-    plot_gt_study_performances_by_template_similarity, StudyComparisonPerformancesByTemplateSimilarity,)
 
-# unit summary
-from .unitsummary import plot_unit_summary, UnitSummaryWidget
+# we keep this to keep compatibility so we have all previous widgets
+# except the one that have been ported that are imported
+# with "from .widget_list import *" in the first line
+from ._legacy_mpl_widgets import *
 
-# unit presence
-from .presence import plot_presence, PresenceWidget
 
-# correlogram comparison
-from .correlogramcomp import (StudyComparisonCorrelogramBySimilarityWidget, plot_study_comparison_correlogram_by_similarity,
-    StudyComparisonCorrelogramBySimilarityRangesMeanErrorWidget, plot_study_comparison_correlogram_by_similarity_ranges_mean_error)
+

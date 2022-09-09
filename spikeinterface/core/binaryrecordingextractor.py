@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from .baserecording import BaseRecording, BaseRecordingSegment
-from .core_tools import read_binary_recording, write_binary_recording
+from .core_tools import read_binary_recording, write_binary_recording, define_function_from_class
 from .job_tools import _shared_job_kwargs_doc
 
 
@@ -44,13 +44,11 @@ class BinaryRecordingExtractor(BaseRecording):
     recording: BinaryRecordingExtractor
         The recording Extractor
     """
-    extractor_name = 'BinaryRecordingExtractor'
-    has_default_locations = False
-    installed = True  # check at class level if installed or not
+    extractor_name = 'BinaryRecording'
     is_writable = True
     mode = 'file'
-    installation_mesg = ""  # error message when not installed
-
+    name = "binary"
+    
     def __init__(self, file_paths, sampling_frequency, num_chan, dtype, t_starts=None, channel_ids=None,
                  time_axis=0, file_offset=0, gain_to_uV=None, offset_to_uV=None,
                  is_filtered=None):
@@ -118,6 +116,19 @@ class BinaryRecordingExtractor(BaseRecording):
         """
         write_binary_recording(recording, file_paths=file_paths, dtype=dtype, **job_kwargs)
 
+    def is_binary_compatible(self):
+        return True
+        
+    def get_binary_description(self):
+        d = dict(
+            file_paths=self._kwargs['file_paths'],
+            dtype=np.dtype(self._kwargs['dtype']),
+            num_channels=self._kwargs['num_chan'],
+            time_axis=self._kwargs['time_axis'],
+            file_offset=self._kwargs['file_offset'],
+        )
+        return d
+
 
 BinaryRecordingExtractor.write_recording.__doc__ = BinaryRecordingExtractor.write_recording.__doc__.format(
     _shared_job_kwargs_doc)
@@ -144,22 +155,10 @@ class BinaryRecordingSegment(BaseRecordingSegment):
         traces = self._timeseries[start_frame:end_frame]
         if channel_indices is not None:
             traces = traces[:, channel_indices]
-
-        if self._timeseries.dtype.str.startswith('uint'):
-            exp_idx = self._dtype.find('int') + 3
-            exp = int(self._dtype[exp_idx:])
-            traces = traces.astype('float32') - 2 ** (exp - 1)
-
         return traces
 
 
 # For backward compatibility (old good time)
 BinDatRecordingExtractor = BinaryRecordingExtractor
 
-
-def read_binary(*args, **kwargs):
-    recording = BinaryRecordingExtractor(*args, **kwargs)
-    return recording
-
-
-read_binary.__doc__ = BinaryRecordingExtractor.__doc__
+read_binary = define_function_from_class(source_class=BinaryRecordingExtractor, name="read_binary")

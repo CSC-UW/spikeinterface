@@ -1,22 +1,38 @@
-import numpy as np
 from pathlib import Path
 
+import numpy as np
+
 from spikeinterface.core import (BaseSorting, BaseSortingSegment)
+from spikeinterface.core.core_tools import define_function_from_class
 
 try:
     import h5py
-
     HAVE_HS2SX = True
 except ImportError:
     HAVE_HS2SX = False
 
 
 class HerdingspikesSortingExtractor(BaseSorting):
+    """Load HerdingSpikes format data as a sorting extractor.
+
+    Parameters
+    ----------
+    folder_path : str or Path
+        Path to the ALF folder.
+    load_unit_info : bool, optional, default: True
+        Whether to load the unit info from the file.
+
+    Returns
+    -------
+    extractor : HerdingSpikesSortingExtractor
+        The loaded data.
+    """
+
     extractor_name = 'HS2Sorting'
     installed = HAVE_HS2SX  # check at class level if installed or not
-    is_writable = True
     mode = 'file'
     installation_mesg = "To use the HS2SortingExtractor install h5py: \n\n pip install h5py\n\n"  # error message when not installed
+    name = "herdingspikes"
 
     def __init__(self, file_path, load_unit_info=True):
         assert self.installed, self.installation_mesg
@@ -39,6 +55,8 @@ class HerdingspikesSortingExtractor(BaseSorting):
         BaseSorting.__init__(self, sampling_frequency, unit_ids)
         self.add_sorting_segment(HerdingspikesSortingSegment(unit_ids, spike_times, spike_ids))
         self._kwargs = {'file_path': str(Path(file_path).absolute()), 'load_unit_info': load_unit_info}
+
+        self.extra_requirements.append('h5py')
 
     def load_unit_info(self):
         # TODO
@@ -126,9 +144,4 @@ class HerdingspikesSortingSegment(BaseSortingSegment):
     """
 
 
-def read_herdingspikes(*args, **kwargs):
-    sorting = HerdingspikesSortingExtractor(*args, **kwargs)
-    return sorting
-
-
-read_herdingspikes.__doc__ = HerdingspikesSortingExtractor.__doc__
+read_herdingspikes = define_function_from_class(source_class=HerdingspikesSortingExtractor, name="read_herdingspikes")

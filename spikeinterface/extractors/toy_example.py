@@ -1,32 +1,39 @@
 import numpy as np
-from pathlib import Path
+
+from probeinterface import Probe
 
 from spikeinterface.extractors import NumpyRecording, NumpySorting
-from probeinterface import Probe
 
 
 def toy_example(duration=10, num_channels=4, num_units=10,
                 sampling_frequency=30000.0, num_segments=2,
                 average_peak_amplitude=-100, upsample_factor=13,
                 contact_spacing_um=40, num_columns=1,
-                seed=None):
-    '''
-    Creates toy recording and sorting extractors.
+                spike_times=None, spike_labels=None,
+                score_detection=1, seed=None):
+    """
+    Creates a toy recording and sorting extractors.
 
     Parameters
     ----------
     duration: float (or list if multi segment)
-        Duration in s (default 10)
+        Duration in seconds (default 10).
     num_channels: int
-        Number of channels (default 4)
+        Number of channels (default 4).
     num_units: int
-        Number of units (default 10)
+        Number of units (default 10).
     sampling_frequency: float
-        Sampling frequency (default 30000)
-    num_segments: int default 2
-        Number of segments.
+        Sampling frequency (default 30000).
+    num_segments: int
+        Number of segments (default 2).
+    spike_times: ndarray (or list of multi segment)
+        Spike time in the recording.
+    spike_labels: ndarray (or list of multi segment)
+        Cluster label for each spike time (needs to specified both together).
+    score_detection: int (between 0 and 1)
+        Generate the sorting based on a subset of spikes compare with the trace generation.
     seed: int
-        Seed for random initialization
+        Seed for random initialization.
 
     Returns
     -------
@@ -34,7 +41,7 @@ def toy_example(duration=10, num_channels=4, num_units=10,
         The output recording extractor.
     sorting: SortingExtractor
         The output sorting extractor.
-    '''
+    """
 
     if isinstance(duration, int):
         duration = float(duration)
@@ -46,6 +53,12 @@ def toy_example(duration=10, num_channels=4, num_units=10,
         assert isinstance(duration, list)
         assert len(durations) == num_segments
         assert all(isinstance(d, float) for d in durations)
+
+    if spike_times is not None:
+        assert isinstance(spike_times, list)
+        assert isinstance(spike_labels, list)
+        assert len(spike_times) == len(spike_labels)
+        assert len(spike_times) == num_segments
 
     assert num_channels > 0
     assert num_units > 0
@@ -61,13 +74,19 @@ def toy_example(duration=10, num_channels=4, num_units=10,
     times_list = []
     labels_list = []
     for segment_index in range(num_segments):
-        times, labels = synthesize_random_firings(num_units=num_units, duration=durations[segment_index],
+        if spike_times is None:
+            times, labels = synthesize_random_firings(num_units=num_units, duration=durations[segment_index],
                                                   sampling_frequency=sampling_frequency, seed=seed)
-        times_list.append(times)
-        labels_list.append(labels)
+        else:
+            times = spike_times[segment_index]
+            labels = spike_labels[segment_index]
 
         traces = synthesize_timeseries(times, labels, unit_ids, waveforms, sampling_frequency, durations[segment_index],
-                                       noise_level=10, waveform_upsample_factor=upsample_factor, seed=seed)
+                                        noise_level=10, waveform_upsample_factor=upsample_factor, seed=seed)
+
+        amp_index= np.sort(np.argsort(np.max(np.abs(traces[times-10, :]), 1))[:int(score_detection*len(times))])
+        times_list.append(times[amp_index]) # Keep only a certain percentage of detected spike for sorting
+        labels_list.append(labels[amp_index])
         traces_list.append(traces)
 
     sorting = NumpySorting.from_times_labels(times_list, labels_list, sampling_frequency)
@@ -99,9 +118,6 @@ def synthesize_random_firings(num_units=20, sampling_frequency=30000.0, duration
 
     # events/sec * sec/timepoint * N
     populations = np.ceil(firing_rates / sampling_frequency * N).astype('int')
-    times = np.zeros(0)
-    labels = np.zeros(0, dtype='int64')
-
     times = []
     labels = []
     for unit_id in range(num_units):
@@ -317,6 +333,36 @@ def synthesize_timeseries(spike_times, spike_labels, unit_ids, waveforms, sampli
                 traces[i_start:i_start + width, :] += wf.T
 
     return traces
+
+
+def synthetize_spike_train(duration, baseline_rate, num_violations, violation_delta=1e-5):
+    """Create a spike train. Has uniform inter-spike intervals, except where isis violations occur.
+
+    Parameters
+    ----------
+    duration : float
+        Length of simulated recording (in seconds).
+    baseline_rate : float
+        Firing rate for 'true' spikes.
+    num_violations : int
+        Number of contaminating spikes.
+    violation_delta : float, optional
+        Temporal offset of contaminating spikes (in seconds), by default 1e-5.
+
+    Returns
+    -------
+    spike_train : np.array
+        Array of monotonically increasing spike times.
+    """
+
+    isis = np.ones((int(duration*baseline_rate),)) / baseline_rate
+    spike_train = np.cumsum(isis)
+    viol_times = spike_train[:int(num_violations)] + violation_delta
+    viol_times = viol_times[viol_times<duration]
+    spike_train = np.sort(np.concatenate((spike_train, viol_times)))
+
+    return spike_train
+
 
 
 if __name__ == '__main__':

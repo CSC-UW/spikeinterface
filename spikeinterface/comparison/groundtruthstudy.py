@@ -9,7 +9,7 @@ from spikeinterface.extractors import NpzSortingExtractor
 from spikeinterface.sorters import sorter_dict, run_sorters
 
 from spikeinterface import WaveformExtractor
-from spikeinterface.toolkit import compute_quality_metrics
+from spikeinterface.qualitymetrics import compute_quality_metrics
 
 from .comparisontools import _perf_keys
 from .paircomparisons import compare_sorter_to_ground_truth
@@ -52,7 +52,7 @@ class GroundTruthStudy:
         setup_comparison_study(study_folder, gt_dict, **job_kwargs)
         return cls(study_folder)
 
-    def run_sorters(self, sorter_list, mode_if_folder_exists='keep', **kwargs):
+    def run_sorters(self, sorter_list, mode_if_folder_exists='keep', remove_sorter_folders=False, **kwargs):
 
         sorter_folders = self.study_folder / 'sorter_folders'
         recording_dict = get_recordings(self.study_folder)
@@ -62,6 +62,9 @@ class GroundTruthStudy:
 
         # results are copied so the heavy sorter_folders can be removed
         self.copy_sortings()
+
+        if remove_sorter_folders:
+            shutil.rmtree(self.study_folder / 'sorter_folders')
 
     def _check_rec_name(self, rec_name):
         if not self._is_scanned:
@@ -244,7 +247,9 @@ class GroundTruthStudy:
 
         # metrics
         metrics = compute_quality_metrics(we, metric_names=metric_names)
-        filename = self.study_folder / 'metrics' / f'metrics _{rec_name}.txt'
+        folder = self.study_folder / 'metrics'
+        folder.mkdir(exist_ok=True)
+        filename = folder / f'metrics _{rec_name}.txt'
         metrics.to_csv(filename, sep='\t', index=True)
 
         return metrics
@@ -280,11 +285,11 @@ class GroundTruthStudy:
         return metric['snr']
 
     def concat_all_snr(self):
-        snr = []
+        metrics = []
         for rec_name in self.rec_names:
-            df = self.get_units_snr(rec_name)
+            df = self.get_metrics(rec_name)
             df = df.reset_index()
-            snr.append(df)
-        snr = pd.concat(snr)
-        snr = snr.set_index(['rec_name', 'unit_id'])
-        return snr
+            metrics.append(df)
+        metrics = pd.concat(metrics)
+        metrics = metrics.set_index(['rec_name', 'unit_id'])
+        return metrics['snr']
