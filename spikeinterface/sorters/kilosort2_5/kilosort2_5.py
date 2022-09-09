@@ -19,9 +19,8 @@ def check_if_installed(kilosort2_5_path: Union[str, None]):
         kilosort2_5_path = kilosort2_5_path[1:-1]
     kilosort2_5_path = str(Path(kilosort2_5_path).absolute())
 
-    if (Path(kilosort2_5_path) / "master_kilosort.m").is_file() or (
-        Path(kilosort2_5_path) / "main_kilosort.m"
-    ).is_file():
+    if (Path(kilosort2_5_path) / 'master_kilosort.m').is_file() or (
+            Path(kilosort2_5_path) / 'main_kilosort.m').is_file():
         return True
     else:
         return False
@@ -36,49 +35,6 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
     requires_locations = False
 
     _default_params = {
-# <<<<<<< HEAD
-#         "detect_threshold": 6,
-#         "projection_threshold": [10, 4],
-#         "preclust_threshold": 8,
-#         "car": True,
-#         "minFR": 0.1,
-#         "minfr_goodchannels": 0.1,
-#         "nblocks": 5,
-#         "do_correction": True,
-#         "sig": 20,
-#         "lam": 10,
-#         "freq_min": 150,
-#         "sigmaMask": 30,
-#         "nPCs": 3,
-#         "ntbuff": 64,
-#         "nfilt_factor": 4,
-#         "NT": None,
-#         "keep_good_only": False,
-#         "total_memory": "500M",
-#         "n_jobs_bin": 1,
-#     }
-
-#     _params_description = {
-#         "detect_threshold": "Threshold for spike detection",
-#         "projection_threshold": "Threshold on projections",
-#         "preclust_threshold": "Threshold crossings for pre-clustering (in PCA projection space)",
-#         "car": "Enable or disable common reference",
-#         "minFR": "Minimum spike rate (Hz), if a cluster falls below this for too long it gets removed",
-#         "minfr_goodchannels": "Minimum firing rate on a 'good' channel",
-#         "nblocks": "blocks for registration. 0 turns it off, 1 does rigid registration. Replaces 'datashift' option.",
-#         "do_correction": "Actually perform drift correction on file on temp_wh.dat.",
-#         "sig": "spatial smoothness constant for registration",
-#         "lam": "amplitude penalty",
-#         "freq_min": "High-pass filter cutoff frequency",
-#         "sigmaMask": "Spatial constant in um for computing residual variance of spike",
-#         "nPCs": "Number of PCA dimensions",
-#         "ntbuff": "Samples of symmetrical buffer for whitening and spike detection",
-#         "nfilt_factor": "Max number of clusters per good channel (even temporary ones) 4",
-#         "NT": "Batch size (if None it is automatically computed)",
-#         "keep_good_only": "If True only 'good' units are returned",
-#         "total_memory": "Chunk size in Mb for saving to binary format (default 500Mb)",
-#         "n_jobs_bin": "Number of jobs for saving to binary format (Default 1)",
-# =======
         'detect_threshold': 6,
         'projection_threshold': [10, 4],
         'preclust_threshold': 8,
@@ -87,6 +43,7 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         'minfr_goodchannels': 0.1,
         'nblocks': 5,
         'sig': 20,
+        'lam': 10,
         'freq_min': 150,
         'sigmaMask': 30,
         'nPCs': 3,
@@ -107,6 +64,7 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         'minfr_goodchannels': "Minimum firing rate on a 'good' channel",
         'nblocks': "blocks for registration. 0 turns it off, 1 does rigid registration. Replaces 'datashift' option.",
         'sig': "spatial smoothness constant for registration",
+        'lam': "amplitude penalty",
         'freq_min': "High-pass filter cutoff frequency",
         'sigmaMask': "Spatial constant in um for computing residual variance of spike",
         'nPCs': "Number of PCA dimensions",
@@ -151,19 +109,16 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
             return 'compiled'
         commit = get_git_commit(os.getenv('KILOSORT2_5_PATH', None))
         if commit is None:
-            return "unknown"
+            return 'unknown'
         else:
-            return "git-" + commit
+            return 'git-' + commit
 
     @staticmethod
     def set_kilosort2_5_path(kilosort2_5_path: PathType):
         kilosort2_5_path = str(Path(kilosort2_5_path).absolute())
         Kilosort2_5Sorter.kilosort2_5_path = kilosort2_5_path
         try:
-            print(
-                "Setting KILOSORT2_5_PATH environment variable for subprocess calls to:",
-                kilosort2_5_path,
-            )
+            print("Setting KILOSORT2_5_PATH environment variable for subprocess calls to:", kilosort2_5_path)
             os.environ["KILOSORT2_5_PATH"] = kilosort2_5_path
         except Exception as e:
             print("Could not set KILOSORT2_5_PATH environment variable:", e)
@@ -171,8 +126,8 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
     @classmethod
     def _check_params(cls, recording, output_folder, params):
         p = params
-        if p["NT"] is None:
-            p["NT"] = 64 * 1024 + p["ntbuff"]
+        if p['NT'] is None:
+            p['NT'] = 64 * 1024 + p['ntbuff']
         else:
             p['NT'] = p['NT'] // 32 * 32  # make sure is multiple of 32
         if p['wave_length'] % 2 != 1:
