@@ -7,13 +7,6 @@ Summary, updated 5/11/2022:
 - Explicitly sets MKL BLAS and LAPACK shared object libraries, which is necessary on Linux per [#199](https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599).
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/1aae5e902c12e0560b54c1dc74fc43c238a3248e)
   - Perhaps we should submit a PR to spikeinterface / KiloSort install intstructions with info about how to obtain proper BLAS and LAPACK versions, then set the   relevant environment variables in `.bashrc`? Or is there a spikeinterface config file that users can add their BLAS and LAPACK locations to? Or can they be set as a keyword argument somewhere? Like in the Kilosort sorter class? 
-- Save diagnositc drift plots by default
-  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/66ddafa08b5f3f13b301c2ce2d5772d843af7cec)
-
-  - Vanilla Kilosort does not save any of the plots generated during drift correction when run from spikeinterface. 
-  In our CSC-UW fork (branch wisc/2.5/dev) [it does](https://github.com/CSC-UW/Kilosort/commit/d74018a6566b8aa22fc68fa75f0e97a4df2dcac1) when the `ops` structure contains a `plotDir` entry set to the path to output debugging plots. No plot is saved if `ops.plotDir` is not specified or is set to `false`
-  - This commit sets `ops.PlotDir` to `<kilosort_output_dir>/plots_ks`.
-  - (TODO) We can get rid of this commit by always saving debugging plots in CSC-UW/Kilosort `datashift2.m` file.
 - Expose lambda parameter to SpikeInterface
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/10dc6a0ded76b750ed5e546625a4bdcb07a0257d)
   - This seems like it would be widely useful as a PR. 
@@ -30,6 +23,11 @@ Summary, updated 5/11/2022:
   - I needed this at some point to concatenating datasets from different runs for sorting , because sampling_rate slightly changes across SpikeGLX runs. This change is currently NOT reflected in wisc_ecephys_tools (which should fail when trying to concatenate across runs). 
 
 ### Reverted changes
+- Save diagnositc drift plots by default
+  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/66ddafa08b5f3f13b301c2ce2d5772d843af7cec)
+  - Reversion: 
+  - Vanilla Kilosort does not save any of the plots generated during drift correction when run from spikeinterface. 
+  In our CSC-UW fork (branch wisc/2.5/dev) [it now does](https://github.com/CSC-UW/Kilosort/commit/a401d21f1feadd46591a085bcc390ab90d786ace) by default, at <output_dir>/plots_ks
 - Attempts to handle cases where user does not have permission to `chmod +x`? 
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/26cca16f9310ffc3e93c073fe64005779f2b3c09)
   - Reversion: [1](https://github.com/CSC-UW/spikeinterface/commit/0b5987fcb58283352ccd6d7dc71cab4541f23cdf)

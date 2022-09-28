@@ -20,9 +20,6 @@ function kilosort2_5_master(fpath, kilosortPath)
         % Load the configuration file, it builds the structure of options (ops)
         load(fullfile(fpath, 'ops.mat'));
 
-        % Save plots
-        ops.plotDir = fullfile(fpath, 'plots_ks');
-
         % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
 
