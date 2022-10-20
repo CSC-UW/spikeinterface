@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def get_random_data_chunks(recording, return_scaled=False, num_chunks_per_segment=20, 
                            chunk_size=10000, concatenated=True, seed=0):
     """
@@ -27,15 +26,20 @@ def get_random_data_chunks(recording, return_scaled=False, num_chunks_per_segmen
     chunk_list: np.array
         Array of concatenate chunks per segment
     """
-    # TODO: if segment have differents length make another sampling that dependant on the lneght of the segment
-    # Should be done by chnaging kwargs with total_num_chunks=XXX and total_duration=YYYY
-    # And randomize the number of chunk per segment wieighted by segment duration
+    # TODO: if segment have differents length make another sampling that dependant on the length of the segment
+    # Should be done by changing kwargs with total_num_chunks=XXX and total_duration=YYYY
+    # And randomize the number of chunk per segment weighted by segment duration
+
+    # check chunk size    
+    for segment_index in range(recording.get_num_segments()):
+        assert chunk_size < recording.get_num_samples(segment_index), (f"chunk_size is greater than the number "
+                                                                        f"of samples for segment index {segment_index}. "
+                                                                        f"Use a smaller chunk_size!")
 
     chunk_list = []
     for segment_index in range(recording.get_num_segments()):
         length = recording.get_num_frames(segment_index)
-        random_starts = np.random.RandomState(seed=seed).randint(0,
-                                                                 length - chunk_size, size=num_chunks_per_segment)
+        random_starts = np.random.RandomState(seed=seed).randint(0, length - chunk_size, size=num_chunks_per_segment)
         for start_frame in random_starts:
             chunk = recording.get_traces(start_frame=start_frame,
                                          end_frame=start_frame + chunk_size,
@@ -52,11 +56,11 @@ def get_channel_distances(recording):
     """
     Distance between channel pairs
     """
-    # TODO SAM: convert to numpy
-    import scipy
     locations = recording.get_channel_locations()
     
-    channel_distances = scipy.spatial.distance.cdist(locations, locations, metric='euclidean')
+
+    channel_distances = np.linalg.norm(locations[:, np.newaxis] - locations[np.newaxis, :], axis=2)
+
     return channel_distances
 
 
@@ -195,3 +199,56 @@ def get_chunk_with_margin(rec_segment, start_frame, end_frame,
             right_margin = margin
 
     return traces_chunk, left_margin, right_margin
+
+
+def order_channels_by_depth(recording, channel_ids=None):
+    """
+    Order channels by depth, by first ordering the x-axis, and then the y-axis.
+
+    Parameters
+    ----------
+    recording : BaseRecording
+        The input recording
+    channel_ids : list/array or None
+        If given, a subset of channels to order locations for
+
+    Returns
+    -------
+    order : np.array
+        Array with sorted indices
+    """
+    locations = recording.get_channel_locations()
+    channel_inds = recording.ids_to_indices(channel_ids)
+    locations = locations[channel_inds, :]
+
+    order = np.lexsort((locations[:, 0], locations[:, 1]))
+
+    return order
+
+
+def check_probe_do_not_overlap(probes):
+    """
+    When several probes this check that that they do not overlap in space
+    and so channel positions can be safly concatenated.
+    """
+    for i in range(len(probes)):
+        probe_i = probes[i]
+        # check that all positions in probe_j are outside probe_i boundaries
+        x_bounds_i = [np.min(probe_i.contact_positions[:, 0]),
+                      np.max(probe_i.contact_positions[:, 0])]
+        y_bounds_i = [np.min(probe_i.contact_positions[:, 1]),
+                      np.max(probe_i.contact_positions[:, 1])]
+
+        for j in range(i + 1, len(probes)):
+            probe_j = probes[j]
+
+            if np.any(np.array([x_bounds_i[0] < cp[0] < x_bounds_i[1] and
+                                y_bounds_i[0] < cp[1] < y_bounds_i[1]
+                                for cp in probe_j.contact_positions])):
+                raise Exception(
+                    "Probes are overlapping! Retrieve locations of single probes separately")
+
+
+
+
+

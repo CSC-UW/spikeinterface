@@ -25,6 +25,11 @@ With SpikeInterface, users can:
 - offer a powerful Qt-based viewer in separate package `spikeinterface-gui <https://https://github.com/SpikeInterface/spikeinterface-gui>`_
 - have some powerful sorting components to build your own sorter.
 
+Overview of SpikeInterface modules
+----------------------------------
+
+.. image:: images/overview.png
+  :align: center
 
 .. toctree::
     :maxdepth: 2
@@ -54,7 +59,8 @@ For more information, please have a look at:
 - A collection of analysis notebook `SpikeInterface Reports <https://spikeinterface.github.io/>`_
 
 
-**Versions and compatibility**
+Versions and compatibility
+--------------------------
 
 We released a major version of SpikeInterface in July 2021 (version 0.90.0)
 

@@ -63,7 +63,7 @@ def localize_peaks(recording, peaks, ms_before=1, ms_after=1, method='center_of_
         step = LocalizeCenterOfMass(recording, ms_before=ms_before, ms_after=ms_after, **method_kwargs)
     elif method == 'monopolar_triangulation':
         step = LocalizeMonopolarTriangulation(recording, ms_before=ms_before, ms_after=ms_after, **method_kwargs)
-        
+    
     peak_locations = run_peak_pipeline(recording, peaks, [step], job_kwargs, job_name='localize peaks', squeeze_output=True)
     
     return peak_locations
@@ -158,7 +158,9 @@ class LocalizeMonopolarTriangulation(PeakPipelineStep):
                 enforce_decrease_shells_ptp(
                     wf_ptp, peak['channel_ind'], self.enforce_decrease_radial_parents, in_place=True
                 )
-            peak_locations[i] = solve_monopolar_triangulation(wf_ptp, local_contact_locations, self.max_distance_um, self.optimizer)
+
+            peak_locations[i] = solve_monopolar_triangulation(wf_ptp, local_contact_locations,
+                                                              self.max_distance_um, self.optimizer)
 
         return peak_locations
 
