@@ -22,6 +22,19 @@ function kilosort2_5_master(fpath, kilosortPath)
         % Load the configuration file, it builds the structure of options (ops)
         load(fullfile(fpath, 'ops.mat'));
 
+        % NEW STEP TO DO DATA REGISTRATION
+        if isfield(ops, 'do_preprocessing')
+            do_preprocessing = ops.do_preprocessing 
+        else
+            do_preprocessing = 1;
+        end
+        
+        if do_preprocessing
+            fprintf("Preprocessing/bin file copy ENABLED\n");
+        else
+            fprintf("Preprocessing/bin file copy DISABLED\n");
+        end
+
         % preprocess data to create temp_wh.dat
         rez = preprocessDataSub(ops);
 
