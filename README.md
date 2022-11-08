@@ -13,11 +13,11 @@ Summary, updated 5/11/2022:
 - Expose lambda parameter to SpikeInterface
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/10dc6a0ded76b750ed5e546625a4bdcb07a0257d)
   - This seems like it would be widely useful as a PR. 
+
+### Changes merged in vanilla Spikeinterface 
 - On UNIX, explicitly set the MATLAB shell to bash. 
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/832d00fd6fa4ffb6da89d10dad91d3e8bb7144fa)
   - We need to do this to prevent MATLAB from using Fish. Otherwise [this](https://github.com/MouseLand/Kilosort/blob/74c64485d8dd0bc5dd976d7bf51a46873b08351f/utils/rezToPhy.m#L186) line fails with a `command not found` error. I (TB) don't understand why that is the case (and it doesn't happen when default shell is Zsh or Bash). I think this would be a useful PR but there might be a better way of adressing this, which applies to all sorters (it might even be an issue with Fish itself).
-
-### Changes merged in vanilla Spikeinterface 
 - Expose do_correction option to SpikeInterface
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/89b8c44112a81100029b7a54123ba44ee8f2b3fd)
   - This seems like it would be widely useful as a PR. 
