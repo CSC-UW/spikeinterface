@@ -4,6 +4,7 @@ We should aim to one day use the official SpikeInterface!
 Detailed comparison: https://github.com/CSC-UW/spikeinterface/compare/master...wisc/dev
 
 Summary, updated 5/11/2022:
+- Temporary fix in append/concat_segments to allow sorting files with different srate
 - Expose do_preprocessing Kilosrt2.5 option to SpikeInterface
   - Commits: 
   - Specific to custom csc-uw/kilosort branch 
