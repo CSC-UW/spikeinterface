@@ -3,15 +3,17 @@ import scipy.interpolate
 import sklearn
 from tqdm import tqdm
 
-import sklearn.metrics
+import scipy.spatial
 
 from spikeinterface.preprocessing.basepreprocessor import BasePreprocessor, BasePreprocessorSegment
+from spikeinterface.preprocessing import get_spatial_interpolation_kernel
 
-try:
-    import numba
-    HAVE_NUMBA = True
-except ImportError:
-    HAVE_NUMBA = False
+
+# try:
+#     import numba
+#     HAVE_NUMBA = True
+# except ImportError:
+#     HAVE_NUMBA = False
 
 
 def correct_motion_on_peaks(peaks, peak_locations, times,
@@ -54,13 +56,15 @@ def correct_motion_on_peaks(peaks, peak_locations, times,
         # non rigid motion = interpolation 2D
         f = scipy.interpolate.RegularGridInterpolator((temporal_bins, spatial_bins), motion,
                                                       method='linear', bounds_error=False, fill_value=None)
-        shift = f(np.c_[times, peak_locations[direction]])
+        spike_times = times[peaks['sample_ind']]
+        shift = f(np.c_[spike_times, peak_locations[direction]])
         corrected_peak_locations[direction] -= shift
 
     return corrected_peak_locations
 
 
-def correct_motion_on_traces(traces, times, channel_locations, motion, temporal_bins, spatial_bins, direction=1,):
+def correct_motion_on_traces(traces, times, channel_locations, motion, temporal_bins, spatial_bins,
+                             direction=1, spatial_interpolation_method='kriging', spatial_interpolation_kwargs={}):
     """
     Apply inverse motion with spatial interpolation on traces.
 
@@ -82,79 +86,87 @@ def correct_motion_on_traces(traces, times, channel_locations, motion, temporal_
         Bins for non-rigid motion. If None, rigid motion is used
     direction: int in (0, 1, 2)
         Dimension of shift in channel_locations.
-
+    spatial_interpolation_method: str in ('idw', 'krigging', 
+        * idw : Inverse Distance Weighing
+        * kriging : kilosort2.5 like
+    spatial_interpolation_kwargs:
+        * specific option for the interpolation method
+    
     Returns
     -------
     channel_motions: np.array
         Shift over time by channel
         Shape (times.shape[0], channel_location.shape[0])
     """
-    assert HAVE_NUMBA
+    # assert HAVE_NUMBA
     assert times.shape[0] == traces.shape[0]
 
     traces_corrected = np.zeros_like(traces)
     # print(traces_corrected.shape)
 
-    if spatial_bins is None:
-        # rigid motion interpolation 1D
-        raise NotImplementedError
-    else:
-        # non rigid motion = interpolation 2D
-        # regroup times by closet temporal_bins
-        bin_inds = _get_closest_ind(temporal_bins, times)
+    
+    
+    # regroup times by closet temporal_bins
+    bin_inds = _get_closest_ind(temporal_bins, times)
 
-        # inperpolation kernel will be the same per temporal bin   
-        for bin_ind in np.unique(bin_inds):
-            # Step 1 : interpolation channel motion for this temporal bin
+    # inperpolation kernel will be the same per temporal bin   
+    for bin_ind in np.unique(bin_inds):
+
+        # Step 1 : channel motion
+        if spatial_bins is None:
+            # rigid motion : same motion for all channels
+            channel_motions = motion[bin_ind, 0]
+        else:
+            # non rigid : interpolation channel motion for this temporal bin
             f = scipy.interpolate.interp1d(spatial_bins, motion[bin_ind, :], kind='linear',
                                            axis=0, bounds_error=False, fill_value="extrapolate")
             locs = channel_locations[:, direction]
             channel_motions = f(locs)
-            channel_locations_moved = channel_locations.copy()
-            channel_locations_moved[:, direction] += channel_motions
+        channel_locations_moved = channel_locations.copy()
+        # channel_locations_moved[:, direction] += channel_motions
+        channel_locations_moved[:, direction] -= channel_motions
 
-            # Step 2 : interpolate trace
-            # interpolation is done with Inverse Distance Weighted
-            # because it is simple to implement
-            # Instead vwe should use use the convex hull, Delaunay triangulation http://www.qhull.org/
-            # scipy.interpolate.LinearNDInterpolator and qhull.Delaunay should help for this
-            distances = sklearn.metrics.pairwise_distances(channel_locations_moved, channel_locations,
-                                                           metric='euclidean')
-            num_chans = channel_locations.shape[0]
-            num_closest = 3
-            closest_chans = np.zeros((num_chans, num_closest), dtype='int64')
-            weights = np.zeros((num_chans, num_closest), dtype='float32')
-            for c in range(num_chans):
-                ind_sorted = np.argsort(distances[c, ])
-                closest_chans[c, :] = ind_sorted[:num_closest]
-                dists = distances[c, ind_sorted[:num_closest]]
-                if dists[0] == 0.:
-                    # no interpolation the first have zeros distance
-                    weights[c, :] = 0
-                    weights[c, 0] = 1
-                else:
-                    # Inverse Distance Weighted
-                    w = 1 / dists
-                    w /= np.sum(w)
-                    weights[c, :] = w
-            my_inverse_weighted_distance_interpolation(traces, traces_corrected, closest_chans, weights)
+        drift_kernel = get_spatial_interpolation_kernel(channel_locations, channel_locations_moved,
+                                                        force_extrapolate=False, dtype='float32',
+                                                        method=spatial_interpolation_method, **spatial_interpolation_kwargs)
+        
+        
+        i0 = np.searchsorted(bin_inds, bin_ind, side='left')
+        i1 = np.searchsorted(bin_inds, bin_ind, side='right')
+        
+        # here we use a simple np.matmul even if dirft_kernel can be super sparse.
+        # because the speed for a sparse matmul is not so good when we disable multi threaad (due multi processing
+        # in ChunkRecordingExecutor)
+        traces_corrected[i0:i1] = traces[i0:i1] @ drift_kernel
 
     return traces_corrected
 
 
-if HAVE_NUMBA:
-    @numba.jit(parallel=False)
-    def my_inverse_weighted_distance_interpolation(traces, traces_corrected, closest_chans, weights):
-        num_sample = traces.shape[0]
-        num_chan = traces.shape[1]
-        num_closest = closest_chans.shape[1]
-        for sample_ind in range(num_sample):
-            for chan_ind in range(num_chan):
-                v = 0
-                for i in range(num_closest):
-                    other_chan = closest_chans[chan_ind, i]
-                    v +=  weights[chan_ind, i] * traces[sample_ind, other_chan]
-                traces_corrected[sample_ind, chan_ind] = v
+
+# if HAVE_NUMBA:
+#     # @numba.jit(parallel=False)
+#     @numba.jit(parallel=True)
+#     def my_sparse_dot(data_in, data_out, sparse_chans, weights):
+#         """
+#         Experimental home made sparse dot.
+#         Faster when use prange but with multiprocessing it is not a good idea.
+#         Custum sparse dot
+#         data_in: num_sample, num_chan_in
+#         data_out: num_sample, num_chan_out
+#         sparse_chans: num_chan_out, num_sparse
+#         weights: num_chan_out, num_sparse
+#         """
+#         num_samples = data_in.shape[0]
+#         num_chan_out = data_out.shape[1]
+#         num_sparse = sparse_chans.shape[1]
+#         # for sample_ind in range(num_samples):
+#         for sample_ind in numba.prange(num_samples):
+#             for out_chan in range(num_chan_out):
+#                 v = 0
+#                 for i in range(num_sparse):
+#                     in_chan = sparse_chans[out_chan, i]
+#                     v +=  weights[out_chan, i] * data_in[sample_ind, in_chan]
+#                 data_out[sample_ind, out_chan] = v
 
 
 def _get_closest_ind(array, values):
@@ -171,6 +183,9 @@ def _get_closest_ind(array, values):
     return idxs
 
 
+# TODO:
+#  * add option for interpolation mode
+#  * add option to handle the borders
 
 class CorrectMotionRecording(BasePreprocessor):
     """
@@ -229,13 +244,14 @@ class CorrectMotionRecordingSegment(BasePreprocessorSegment):
 
     def get_traces(self, start_frame, end_frame, channel_indices):
         if self.time_vector is not None:
-            times = np.asarray(self.time_vector[start_frame:end_frame])
+            raise NotImplementedError('time_vector for CorrectMotionRecording do not work because temporal_bins start from 0')
+            # times = np.asarray(self.time_vector[start_frame:end_frame])
         else:
-            times = np.arange(end_frame - start_frame, dtype='float64')
+            times = np.arange((end_frame or self.get_num_samples()) - (start_frame or 0), dtype='float64')
             times /= self.sampling_frequency
             t0 = start_frame / self.sampling_frequency
-            if self.t_start is not None:
-                t0 = t0 + self.t_start
+            # if self.t_start is not None:
+            #     t0 = t0 + self.t_start
             times += t0
 
         traces = self.parent_recording_segment.get_traces(start_frame, end_frame, channel_indices=None)
