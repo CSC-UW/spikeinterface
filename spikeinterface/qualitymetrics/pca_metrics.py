@@ -77,7 +77,7 @@ def calculate_pc_metrics(pca, metric_names=None, sparsity=None, qm_params=None,
         for each unit.
     qm_params : dict or None
         Dictionary with parameters for each PC metric function.
-    seed : int, optional, default: None
+    seed : int, default: None
         Random seed value.
     n_jobs : int
         Number of jobs to parallelize metric computations.
@@ -183,9 +183,9 @@ def mahalanobis_metrics(all_pcs, all_labels, this_unit_id):
     l_ratio : float
         L-ratio for this unit.
 
-    Reference
-    ---------
-    Based on metrics described in Schmitzer-Torbert et al. (2005) Neurosci 131: 1-11
+    References
+    ----------
+    Based on metrics described in [Schmitzer-Torbert]_
     """
 
     pcs_for_this_unit = all_pcs[all_labels == this_unit_id, :]
@@ -241,9 +241,9 @@ def lda_metrics(all_pcs, all_labels, this_unit_id):
     d_prime : float
         D prime measure of this unit.
 
-    Reference
-    ---------
-    Based on metric described in Hill et al. (2011) J Neurosci 31: 8699-8705
+    References
+    ----------
+    Based on metric described in [Hill]_
     """
 
     X = all_pcs
@@ -293,11 +293,13 @@ def nearest_neighbors_metrics(all_pcs, all_labels, this_unit_id, max_spikes, n_n
     -----
     A is a (hopefully) representative subset of cluster X
 
-    NN_hit(X) = 1/k \\sum_i=1^k |{{x in A such that ith closest neighbor is in X}}| / |A|
+    .. math::
 
-    Reference
-    ---------
-    Based on metrics described in Chung, Magland et al. (2017) Neuron 95: 1381-1394
+        NN_hit(X) = 1/k \\sum_i=1^k |{{x in A such that ith closest neighbor is in X}}| / \\|A\\|
+
+    References
+    ----------
+    Based on metrics described in [Chung]_
     """
 
     total_spikes = all_pcs.shape[0]
@@ -345,24 +347,24 @@ def nearest_neighbors_isolation(waveform_extractor: WaveformExtractor, this_unit
         The waveform extractor object.
     this_unit_id : int
         The ID for the unit to calculate these metrics for.
-    max_spikes : int, optional, default: 1000
+    max_spikes : int, default: 1000
         Max number of spikes to use per unit.
     min_spikes : int, optional, defalt: 10
         Min number of spikes a unit must have to go through with metric computation.
         Units with spikes < min_spikes gets numpy.NaN as the quality metric.
-    n_neighbors : int, optional, default: 5
+    n_neighbors : int, default: 5
         Number of neighbors to check membership of.
-    n_components : int, optional, default: 10
+    n_components : int, default: 10
         The number of PC components to use to project the snippets to.
-    radius_um : float, optional, default: 100
+    radius_um : float, default: 100
         The radius, in um, that channels need to be within the peak channel to be included.
-    peak_sign: str, optional, default: 'neg'
+    peak_sign: str, default: 'neg'
         The peak_sign used to compute sparsity and neighbor units. Used if waveform_extractor 
         is not sparse already.
-    min_spatial_overlap : float, optional, default: 100
+    min_spatial_overlap : float, default: 100
         In case waveform_extractor is sparse, other units are selected if they share at least 
-        `min_spatial_overlap * n_target_unit_channels` with the target unit
-    seed : int, optional, default: None
+        `min_spatial_overlap` times `n_target_unit_channels` with the target unit
+    seed : int, default: None
         Seed for random subsampling of spikes.
 
     Returns
@@ -374,19 +376,22 @@ def nearest_neighbors_isolation(waveform_extractor: WaveformExtractor, this_unit
     Notes
     -----
     The overall logic of this approach is:
-    1) Choose a cluster
-    2) Compute the isolation score with every other cluster
-    3) Isolation score is defined as the min of (2) (i.e. 'worst-case measure')
+
+    #. Choose a cluster
+    #. Compute the isolation score with every other cluster
+    #. Isolation score is defined as the min of 2. (i.e. 'worst-case measure')
 
     The implementation of this approach is:
 
     Let A and B be two clusters from sorting.
 
-    We set |A| = |B|:
-        If max_spikes < |A| and max_spikes < |B|:
-            Then randomly subsample max_spikes samples from A and B.
-        If max_spikes > min(|A|, |B|) (e.g. |A| > max_spikes > |B|):
-            Then randomly subsample min(|A|, |B|) samples from A and B.
+    We set \\|A\\| = \\|B\\|:
+
+        * | If max_spikes < \\|A\\| and max_spikes < \\|B\\|:
+          |     Then randomly subsample max_spikes samples from A and B.
+        * | If max_spikes > min(\\|A\\|, \\|B\\|) (e.g. \\|A\\| > max_spikes > \\|B\\|):
+          |     Then randomly subsample min(\\|A\\|, \\|B\\|) samples from A and B.
+
     This is because the metric is affected by the size of the clusters being compared
     independently of how well-isolated they are.
 
@@ -394,9 +399,9 @@ def nearest_neighbors_isolation(waveform_extractor: WaveformExtractor, this_unit
 
     See docstring for `_compute_isolation` for the definition of isolation score.
 
-    Reference
-    ---------
-    Based on isolation metric described in Chung et al. (2017) Neuron 95: 1381-1394.
+    References
+    ----------
+    Based on isolation metric described in [Chung]_
     """
     rng = np.random.default_rng(seed=seed)
 
@@ -497,21 +502,21 @@ def nearest_neighbors_noise_overlap(waveform_extractor: WaveformExtractor,
         The waveform extractor object.
     this_unit_id : int
         The ID of the unit to calculate this metric on.
-    max_spikes : int, optional, default: 1000
+    max_spikes : int, default: 1000
         The max number of spikes to use per cluster.
     min_spikes : int, optional, defalt: 10
         Min number of spikes a unit must have to go through with metric computation.
         Units with spikes < min_spikes gets numpy.NaN as the quality metric.
-    n_neighbors : int, optional, default: 5
+    n_neighbors : int, default: 5
         The number of neighbors to check membership.
-    n_components : int, optional, default: 10
+    n_components : int, default: 10
         The number of PC components to use to project the snippets to.
-    radius_um : float, optional, default: 100
+    radius_um : float, default: 100
         The radius, in um, that channels need to be within the peak channel to be included.
-    peak_sign: str, optional, default: 'neg'
+    peak_sign: str, default: 'neg'
         The peak_sign used to compute sparsity and neighbor units. Used if waveform_extractor 
         is not sparse already.
-    seed : int, optional, default: 0
+    seed : int, default: 0
         Random seed for subsampling spikes.
 
     Returns
@@ -523,6 +528,7 @@ def nearest_neighbors_noise_overlap(waveform_extractor: WaveformExtractor,
     Notes
     -----
     The general logic of this measure is:
+
     1. Generate a noise cluster by randomly sampling voltage snippets from recording.
     2. Subtract projection onto the weighted average of noise snippets
        of both the target and noise clusters to correct for bias in sampling.
@@ -533,9 +539,9 @@ def nearest_neighbors_noise_overlap(waveform_extractor: WaveformExtractor,
 
     See docstring for `_compute_isolation` for the definition of isolation score.
 
-    Reference
-    ---------
-    Based on noise overlap metric described in Chung et al. (2017) Neuron 95: 1381-1394.
+    References
+    ----------
+    Based on noise overlap metric described in [Chung]_
     """
     rng = np.random.default_rng(seed=seed)
 
