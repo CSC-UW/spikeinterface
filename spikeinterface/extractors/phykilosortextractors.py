@@ -157,8 +157,8 @@ class BasePhyKilosortSortingExtractor(BaseSorting):
 class PhySortingSegment(BaseSortingSegment):
     def __init__(self, all_spikes, all_clusters):
         BaseSortingSegment.__init__(self)
-        self._all_spikes = np.atleast_1d(all_spikes.squeeze())
-        self._all_clusters = np.atleast_1d(all_clusters.squeeze())
+        self._all_spikes = all_spikes
+        self._all_clusters = all_clusters
 
     def get_unit_spike_train(self, unit_id, start_frame, end_frame):
         start = 0 if start_frame is None else np.searchsorted(self._all_spikes, start_frame, side="left")
