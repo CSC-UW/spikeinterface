@@ -66,8 +66,8 @@ Summary, updated 5/11/2022:
 <tr>
   <td>Build Status</td>
   <td>
-    <a href="https://github.com/SpikeInterface/spikeinterface/actions/workflows/full-test.yml/badge.svg">
-    <img src="https://github.com/SpikeInterface/spikeinterface/actions/workflows/full-test.yml/badge.svg" alt="travis build status" />
+    <a href="https://github.com/SpikeInterface/spikeinterface/actions/workflows/full-test-with-codecov.yml/badge.svg">
+    <img src="https://github.com/SpikeInterface/spikeinterface/actions/workflows/full-test-with-codecov.yml/badge.svg" alt="CI build status" />
     </a>
   </td>
 </tr>
