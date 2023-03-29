@@ -367,7 +367,7 @@ class ConcatenateSegmentSorting(BaseSorting):
                 "Use ignore_times=True to ignore time information."
             )
         else:
-            assert total_samples_list is None, "Sortings have registered recordings: Use `total_samples_list`=None"
+            assert total_samples_list is None, "Sortings have registered recordings: Use `total_samples_list=None`"
 
         # Pull metadata from AppendSorting object
         one_sorting = append_sortings(sorting_list, sampling_frequency_max_diff=sampling_frequency_max_diff)
@@ -377,7 +377,7 @@ class ConcatenateSegmentSorting(BaseSorting):
         # Check and pull n_samples from each segment
         parent_segments = []
         parent_num_samples = []
-        for sorting in sorting_list:
+        for sorting_i, sorting in enumerate(sorting_list):
             for segment_i, parent_segment in enumerate(sorting._sorting_segments):
                 # Check t_start is not assigned
                 segment_t_start = parent_segment._t_start
@@ -390,7 +390,19 @@ class ConcatenateSegmentSorting(BaseSorting):
                     segment_num_samples = sorting.get_num_samples(segment_index=segment_i)
                 else:
                     assert segment_i == 0  # Already checked: sortings should be monosegment if they have no rec
-                    segment_num_samples = total_samples_list[segment_i]
+                    segment_num_samples = total_samples_list[sorting_i]
+                # Check consistency between num samples and spike frames
+                for unit_id in sorting.unit_ids:
+                    unit_segment_spikes = parent_segment.get_unit_spike_train(
+                        unit_id=unit_id, start_frame=None, end_frame=None,
+                    )
+                    if any([spike_frame >= segment_num_samples for spike_frame in unit_segment_spikes]):
+                        raise ValueError(
+                            "Sortings' spike frames exceed the provided number of samples for some segment. "
+                            "If the sortings have registered recordings, you can remove these excess "
+                            "spikes with `spikeinterface.curation.remove_excess_spikes(sorting, sorting._recording)`. "
+                            "Otherwise, the `total_num_samples` argument may contain invalid values."
+                        )
                 parent_segments.append(parent_segment)
                 parent_num_samples.append(segment_num_samples)
         self.parent_num_samples = parent_num_samples
