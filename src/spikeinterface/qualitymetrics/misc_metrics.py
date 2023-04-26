@@ -457,7 +457,7 @@ _default_params["sliding_rp_violation"] = dict(
 )
 
 
-def compute_amplitude_cutoffs(waveform_extractor, peak_sign='neg',
+def compute_amplitude_cutoffs(waveform_extractor, spike_amplitudes=None, peak_sign='neg',
                               num_histogram_bins=500, histogram_smoothing_value=3,
                               amplitudes_bins_min_ratio=5):
     """Calculate approximate fraction of spikes missing from a distribution of amplitudes.
@@ -466,6 +466,9 @@ def compute_amplitude_cutoffs(waveform_extractor, peak_sign='neg',
     ----------
     waveform_extractor : WaveformExtractor
         The waveform extractor object.
+    spike_amplitudes : dict of int: array-like
+        Dict of the form {<unit_id>: <unit_amplitudes>}. 
+        If provided, used to pull amplitudes for each unit.
     peak_sign : {'neg', 'pos', 'both'}
         The sign of the peaks.
     num_histogram_bins : int, default: 100
@@ -503,16 +506,18 @@ def compute_amplitude_cutoffs(waveform_extractor, peak_sign='neg',
     before = waveform_extractor.nbefore
     extremum_channels_ids = get_template_extremum_channel(waveform_extractor, peak_sign=peak_sign)
 
-    spike_amplitudes = None
     invert_amplitudes = False
-    if waveform_extractor.is_extension("spike_amplitudes"):
-        amp_calculator = waveform_extractor.load_extension("spike_amplitudes")
-        spike_amplitudes = amp_calculator.get_data(outputs="by_unit")
-        if amp_calculator._params["peak_sign"] == "pos":
-            invert_amplitudes = True
-    else:
-        if peak_sign == "pos":
-            invert_amplitudes = True
+    if spike_amplitudes is None:
+        invert_amplitudes = False
+        if waveform_extractor.is_extension("spike_amplitudes"):
+            amp_calculator = waveform_extractor.load_extension("spike_amplitudes")
+            spike_amplitudes = amp_calculator.get_data(outputs="by_unit")
+            if amp_calculator._params["peak_sign"] == "pos":
+                invert_amplitudes = True
+        else:
+            if peak_sign == "pos":
+                invert_amplitudes = True
+            spike_amplitudes = None
 
     all_fraction_missing = {}
     nan_units = []
