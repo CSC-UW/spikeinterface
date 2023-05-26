@@ -113,12 +113,8 @@ class ConcatenateSegmentRecording(BaseRecording):
         Maximum allowed difference of sampling frequencies across recordings (default 0)
     """
 
-<<<<<<< HEAD
     def __init__(self, recording_list, ignore_times=True, sampling_frequency_max_diff=1e-6):
 
-=======
-    def __init__(self, recording_list, ignore_times=True, sampling_frequency_max_diff=0):
->>>>>>> master
         one_rec = append_recordings(recording_list, sampling_frequency_max_diff=sampling_frequency_max_diff)
 
         BaseRecording.__init__(self, one_rec.get_sampling_frequency(), one_rec.channel_ids, one_rec.get_dtype())
