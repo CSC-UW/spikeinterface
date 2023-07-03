@@ -52,7 +52,6 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         'nfilt_factor': 4,
         'NT': None,
         'do_correction': True,
-        'do_preprocessing': True,
         'wave_length': 61,
         'keep_good_only': False,
     }
@@ -73,7 +72,6 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         'ntbuff': "Samples of symmetrical buffer for whitening and spike detection",
         'nfilt_factor': "Max number of clusters per good channel (even temporary ones) 4",
         "do_correction": "If True drift registration is applied",
-        "do_preprocessing": "If False, input bin file is used for sorting directly.",
         'NT': "Batch size (if None it is automatically computed)",
         'keep_good_only': "If True only 'good' units are returned",
         'wave_length': "size of the waveform extracted around each detected peak, (Default 61, maximum 81)",
