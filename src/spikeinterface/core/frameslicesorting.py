@@ -47,12 +47,12 @@ class FrameSliceSorting(BaseSorting):
             parent_n_samples = parent_sorting._recording.get_total_samples()
             if end_frame is None:
                 end_frame = parent_n_samples
-            assert end_frame <= parent_n_samples, (
-                "`end_frame` should be smaller than the sortings total number of samples."
-            )
-            assert start_frame <= parent_n_samples, (
-                "`start_frame` should be smaller than the sortings total number of samples."
-            )
+            assert (
+                end_frame <= parent_n_samples
+            ), "`end_frame` should be smaller than the sortings total number of samples."
+            assert (
+                start_frame <= parent_n_samples
+            ), "`start_frame` should be smaller than the sortings total number of samples."
             if check_spike_frames and has_exceeding_spikes(parent_sorting._recording, parent_sorting):
                 raise ValueError(
                     "The sorting object has spikes exceeding the recording duration. You have to remove those spikes "
@@ -86,7 +86,12 @@ class FrameSliceSorting(BaseSorting):
             self.register_recording(parent_sorting._recording.frame_slice(start_frame=start_frame, end_frame=end_frame))
 
         # update dump dict
-        self._kwargs = {"parent_sorting": parent_sorting, "start_frame": int(start_frame), "end_frame": int(end_frame)}
+        self._kwargs = {
+            "parent_sorting": parent_sorting,
+            "start_frame": int(start_frame),
+            "end_frame": int(end_frame),
+            "check_spike_frames": check_spike_frames,
+        }
 
 
 class FrameSliceSortingSegment(BaseSortingSegment):

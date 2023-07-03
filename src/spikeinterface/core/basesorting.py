@@ -302,8 +302,10 @@ class BaseSorting(BaseExtractor):
 
     def frame_slice(self, start_frame, end_frame, check_spike_frames=True):
         from spikeinterface import FrameSliceSorting
+
         sub_sorting = FrameSliceSorting(
-            self, start_frame=start_frame,end_frame=end_frame, check_spike_frames=check_spike_frames)
+            self, start_frame=start_frame, end_frame=end_frame, check_spike_frames=check_spike_frames
+        )
         return sub_sorting
 
     def get_all_spike_trains(self, outputs="unit_id"):
