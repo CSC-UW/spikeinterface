@@ -123,7 +123,7 @@ class BasePhyKilosortSortingExtractor(BaseSorting):
             for i, (phy_id, si_id) in enumerate(
                 zip(cluster_info["cluster_id"].values, cluster_info["si_unit_id"].values)
             ):
-                if np.isnan(si_id):
+                if np.isnan(si_id) or np.count_nonzero(cluster_info["si_unit_id"].values == si_id) != 1:
                     max_si_unit_id += 1
                     new_si_id = int(max_si_unit_id)
                 else:
@@ -159,6 +159,8 @@ class BasePhyKilosortSortingExtractor(BaseSorting):
                 if load_all_cluster_properties:
                     self.set_property(key=prop_name, values=cluster_info[prop_name])
 
+        self.annotate(phy_folder=str(phy_folder.resolve()))
+
         self.add_sorting_segment(PhySortingSegment(spike_times_clean, spike_clusters_clean))
 
 
@@ -170,7 +172,9 @@ class PhySortingSegment(BaseSortingSegment):
 
     def get_unit_spike_train(self, unit_id, start_frame, end_frame):
         start = 0 if start_frame is None else np.searchsorted(self._all_spikes, start_frame, side="left")
-        end = len(self._all_spikes) if end_frame is None else np.searchsorted(self._all_spikes, end_frame, side="left")
+        end = (
+            len(self._all_spikes) if end_frame is None else np.searchsorted(self._all_spikes, end_frame, side="left")
+        )  # Exclude end frame
 
         spike_times = self._all_spikes[start:end][self._all_clusters[start:end] == unit_id]
         return np.atleast_1d(spike_times.copy().squeeze())
