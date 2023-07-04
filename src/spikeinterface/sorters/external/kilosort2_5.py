@@ -61,20 +61,20 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
     }
 
     _params_description = {
-        'detect_threshold': "Threshold for spike detection",
-        'projection_threshold': "Threshold on projections",
-        'preclust_threshold': "Threshold crossings for pre-clustering (in PCA projection space)",
-        'car': "Enable or disable common reference",
-        'minFR': "Minimum spike rate (Hz), if a cluster falls below this for too long it gets removed",
-        'minfr_goodchannels': "Minimum firing rate on a 'good' channel",
-        'nblocks': "blocks for registration. 0 turns it off, 1 does rigid registration. Replaces 'datashift' option.",
-        'sig': "spatial smoothness constant for registration",
-        'lam': "amplitude penalty",
-        'freq_min': "High-pass filter cutoff frequency",
-        'sigmaMask': "Spatial constant in um for computing residual variance of spike",
-        'nPCs': "Number of PCA dimensions",
-        'ntbuff': "Samples of symmetrical buffer for whitening and spike detection",
-        'nfilt_factor': "Max number of clusters per good channel (even temporary ones) 4",
+        "detect_threshold": "Threshold for spike detection",
+        "projection_threshold": "Threshold on projections",
+        "preclust_threshold": "Threshold crossings for pre-clustering (in PCA projection space)",
+        "car": "Enable or disable common reference",
+        "minFR": "Minimum spike rate (Hz), if a cluster falls below this for too long it gets removed",
+        "minfr_goodchannels": "Minimum firing rate on a 'good' channel",
+        "nblocks": "blocks for registration. 0 turns it off, 1 does rigid registration. Replaces 'datashift' option.",
+        "sig": "spatial smoothness constant for registration",
+        "lam": "amplitude penalty",
+        "freq_min": "High-pass filter cutoff frequency",
+        "sigmaMask": "Spatial constant in um for computing residual variance of spike",
+        "nPCs": "Number of PCA dimensions",
+        "ntbuff": "Samples of symmetrical buffer for whitening and spike detection",
+        "nfilt_factor": "Max number of clusters per good channel (even temporary ones) 4",
         "do_correction": "If True drift registration is applied",
         "NT": "Batch size (if None it is automatically computed)",
         "keep_good_only": "If True only 'good' units are returned",
@@ -219,7 +219,7 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         ops["do_correction"] = params["do_correction"]
 
         # Whole preprocessing
-        ops['do_preprocessing'] = params['do_preprocessing']
+        ops["do_preprocessing"] = params["do_preprocessing"]
 
         ## option for wavelength
         ops["nt0"] = params[
