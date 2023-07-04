@@ -163,16 +163,12 @@ def calculate_pc_metrics(
         if we.is_sparse():
             neighbor_channel_ids = we.sparsity.unit_id_to_channel_ids[unit_id]
             neighbor_unit_ids = [
-                other_unit
-                for other_unit in unit_ids
-                if extremum_channels[other_unit] in neighbor_channel_ids
+                other_unit for other_unit in unit_ids if extremum_channels[other_unit] in neighbor_channel_ids
             ]
         elif sparsity is not None:
             neighbor_channel_ids = sparsity.unit_id_to_channel_ids[unit_id]
             neighbor_unit_ids = [
-                other_unit
-                for other_unit in unit_ids
-                if extremum_channels[other_unit] in neighbor_channel_ids
+                other_unit for other_unit in unit_ids if extremum_channels[other_unit] in neighbor_channel_ids
             ]
         else:
             neighbor_channel_ids = channel_ids
@@ -180,9 +176,7 @@ def calculate_pc_metrics(
         neighbor_channel_indices = we.channel_ids_to_indices(neighbor_channel_ids)
 
         labels = all_labels[np.in1d(all_labels, neighbor_unit_ids)]
-        pcs = all_pcs[np.in1d(all_labels, neighbor_unit_ids)][
-            :, :, neighbor_channel_indices
-        ]
+        pcs = all_pcs[np.in1d(all_labels, neighbor_unit_ids)][:, :, neighbor_channel_indices]
         pcs_flat = pcs.reshape(pcs.shape[0], -1)
 
         func_args = (
@@ -207,9 +201,7 @@ def calculate_pc_metrics(
 
     if run_in_parallel:
         if progress_bar:
-            units_loop = tqdm(
-                units_loop, desc="Computing PCA metrics", total=len(unit_ids)
-            )
+            units_loop = tqdm(units_loop, desc="Computing PCA metrics", total=len(unit_ids))
             with tqdm_joblib(units_loop) as pb:
                 pc_metrics_units = Parallel(n_jobs=n_jobs)(parallel_functions)
         else:
@@ -262,27 +254,16 @@ def mahalanobis_metrics(all_pcs, all_labels, this_unit_id):
         # case of singular matrix
         return np.nan, np.nan
 
-    mahalanobis_other = np.sort(
-        scipy.spatial.distance.cdist(
-            mean_value, pcs_for_other_units, "mahalanobis", VI=VI
-        )[0]
-    )
+    mahalanobis_other = np.sort(scipy.spatial.distance.cdist(mean_value, pcs_for_other_units, "mahalanobis", VI=VI)[0])
 
-    mahalanobis_self = np.sort(
-        scipy.spatial.distance.cdist(
-            mean_value, pcs_for_this_unit, "mahalanobis", VI=VI
-        )[0]
-    )
+    mahalanobis_self = np.sort(scipy.spatial.distance.cdist(mean_value, pcs_for_this_unit, "mahalanobis", VI=VI)[0])
 
     # number of spikes
     n = np.min([pcs_for_this_unit.shape[0], pcs_for_other_units.shape[0]])
 
     if n >= 2:
         dof = pcs_for_this_unit.shape[1]  # number of features
-        l_ratio = (
-            np.sum(1 - scipy.stats.chi2.cdf(pow(mahalanobis_other, 2), dof))
-            / mahalanobis_self.shape[0]
-        )
+        l_ratio = np.sum(1 - scipy.stats.chi2.cdf(pow(mahalanobis_other, 2), dof)) / mahalanobis_self.shape[0]
         isolation_distance = pow(mahalanobis_other[n - 1], 2)
         # if math.isnan(l_ratio):
         #     print("NaN detected", mahalanobis_other, VI)
@@ -334,9 +315,7 @@ def lda_metrics(all_pcs, all_labels, this_unit_id):
     return d_prime
 
 
-def nearest_neighbors_metrics(
-    all_pcs, all_labels, this_unit_id, max_spikes, n_neighbors
-):
+def nearest_neighbors_metrics(all_pcs, all_labels, this_unit_id, max_spikes, n_neighbors):
     """
     Calculates unit contamination based on NearestNeighbors search in PCA space.
 
@@ -379,9 +358,7 @@ def nearest_neighbors_metrics(
 
     # if no other units in the vicinity, return best possible option
     if len(np.unique(all_labels)) == 1:
-        warnings.warn(
-            f"No other units found in the vicinity of {this_unit}. Setting nn_hit_rate=1 and nn_miss_rate=0"
-        )
+        warnings.warn(f"No other units found in the vicinity of {this_unit}. Setting nn_hit_rate=1 and nn_miss_rate=0")
         return 1.0, 0.0
 
     this_unit = all_labels == this_unit_id
@@ -520,8 +497,7 @@ def nearest_neighbors_isolation(
     elif fr_all_units[this_unit_id] < min_fr:
         warnings.warn(
             f"Warning: unit {this_unit_id} has a firing rate ",
-            f"below the specified `min_fr` ({min_fr}Hz); "
-            f"returning NaN as the quality metric...",
+            f"below the specified `min_fr` ({min_fr}Hz); " f"returning NaN as the quality metric...",
         )
         return np.nan, np.nan
     else:
@@ -530,10 +506,7 @@ def nearest_neighbors_isolation(
             [
                 unit
                 for unit in all_units_ids
-                if (
-                    n_spikes_all_units[unit] >= min_spikes
-                    and fr_all_units[unit] >= min_fr
-                )
+                if (n_spikes_all_units[unit] >= min_spikes and fr_all_units[unit] >= min_fr)
             ]
         )
         sorting = sorting.select_units(unit_ids=unit_ids_to_keep)
@@ -581,35 +554,19 @@ def nearest_neighbors_isolation(
                 len(other_units_ids),
             )
             for other_unit_id in other_units_ids:
-                waveforms_other_unit = waveform_extractor.get_waveforms(
-                    unit_id=other_unit_id
-                )
+                waveforms_other_unit = waveform_extractor.get_waveforms(unit_id=other_unit_id)
                 n_spikes_other_unit = waveforms_other_unit.shape[0]
-                closest_chans_other_unit = sparsity.unit_id_to_channel_indices[
-                    other_unit_id
-                ]
-                n_snippets = np.min(
-                    [n_spikes_target_unit, n_spikes_other_unit, max_spikes]
-                )
+                closest_chans_other_unit = sparsity.unit_id_to_channel_indices[other_unit_id]
+                n_snippets = np.min([n_spikes_target_unit, n_spikes_other_unit, max_spikes])
 
                 # make the two clusters equal in terms of: number of spikes & channels with signal
-                waveforms_target_unit_idx = rng.choice(
-                    n_spikes_target_unit, size=n_snippets, replace=False
-                )
-                waveforms_target_unit_sampled = waveforms_target_unit[
-                    waveforms_target_unit_idx
-                ]
-                waveforms_other_unit_idx = rng.choice(
-                    n_spikes_other_unit, size=n_snippets, replace=False
-                )
-                waveforms_other_unit_sampled = waveforms_other_unit[
-                    waveforms_other_unit_idx
-                ]
+                waveforms_target_unit_idx = rng.choice(n_spikes_target_unit, size=n_snippets, replace=False)
+                waveforms_target_unit_sampled = waveforms_target_unit[waveforms_target_unit_idx]
+                waveforms_other_unit_idx = rng.choice(n_spikes_other_unit, size=n_snippets, replace=False)
+                waveforms_other_unit_sampled = waveforms_other_unit[waveforms_other_unit_idx]
 
                 # project this unit and other unit waveforms on common subspace
-                common_channel_idxs = np.intersect1d(
-                    closest_chans_target_unit, closest_chans_other_unit
-                )
+                common_channel_idxs = np.intersect1d(closest_chans_target_unit, closest_chans_other_unit)
                 if waveform_extractor.is_sparse():
                     # in this case, waveforms are sparse so we need to do some smart indexing
                     waveforms_target_unit_sampled = waveforms_target_unit_sampled[
@@ -619,12 +576,8 @@ def nearest_neighbors_isolation(
                         :, :, np.in1d(closest_chans_other_unit, common_channel_idxs)
                     ]
                 else:
-                    waveforms_target_unit_sampled = waveforms_target_unit_sampled[
-                        :, :, common_channel_idxs
-                    ]
-                    waveforms_other_unit_sampled = waveforms_other_unit_sampled[
-                        :, :, common_channel_idxs
-                    ]
+                    waveforms_target_unit_sampled = waveforms_target_unit_sampled[:, :, common_channel_idxs]
+                    waveforms_other_unit_sampled = waveforms_other_unit_sampled[:, :, common_channel_idxs]
 
                 # compute principal components after concatenation
                 all_snippets = np.concatenate(
@@ -742,8 +695,7 @@ def nearest_neighbors_noise_overlap(
     elif fr_all_units[this_unit_id] < min_fr:
         warnings.warn(
             f"Warning: unit {this_unit_id} has a firing rate ",
-            f"below the specified `min_fr` ({min_fr}Hz); "
-            f"returning NaN as the quality metric...",
+            f"below the specified `min_fr` ({min_fr}Hz); " f"returning NaN as the quality metric...",
         )
         return np.nan
     else:
@@ -756,9 +708,7 @@ def nearest_neighbors_noise_overlap(
             chunk_size=waveform_extractor.nsamples,
             seed=seed,
         )
-        noise_cluster = np.reshape(
-            noise_cluster, (max_spikes, waveform_extractor.nsamples, -1)
-        )
+        noise_cluster = np.reshape(noise_cluster, (max_spikes, waveform_extractor.nsamples, -1))
 
         # get waveforms for target cluster
         waveforms = waveform_extractor.get_waveforms(unit_id=this_unit_id).copy()
@@ -769,9 +719,7 @@ def nearest_neighbors_noise_overlap(
             waveforms = waveforms[wf_ind]
             n_snippets = max_spikes
         elif waveforms.shape[0] < max_spikes:
-            noise_ind = rng.choice(
-                noise_cluster.shape[0], waveforms.shape[0], replace=False
-            )
+            noise_ind = rng.choice(noise_cluster.shape[0], waveforms.shape[0], replace=False)
             noise_cluster = noise_cluster[noise_ind]
             n_snippets = waveforms.shape[0]
         else:
@@ -787,39 +735,25 @@ def nearest_neighbors_noise_overlap(
                 peak_sign=peak_sign,
                 radius_um=radius_um,
             )
-        noise_cluster = noise_cluster[
-            :, :, sparsity.unit_id_to_channel_indices[this_unit_id]
-        ]
+        noise_cluster = noise_cluster[:, :, sparsity.unit_id_to_channel_indices[this_unit_id]]
 
         # compute weighted noise snippet (Z)
-        median_waveform = waveform_extractor.get_template(
-            unit_id=this_unit_id, mode="median"
-        )
+        median_waveform = waveform_extractor.get_template(unit_id=this_unit_id, mode="median")
 
         # in case waveform_extractor is sparse, waveforms and templates are already sparse
         if not waveform_extractor.is_sparse():
-            waveforms = waveforms[
-                :, :, sparsity.unit_id_to_channel_indices[this_unit_id]
-            ]
-            median_waveform = median_waveform[
-                :, sparsity.unit_id_to_channel_indices[this_unit_id]
-            ]
+            waveforms = waveforms[:, :, sparsity.unit_id_to_channel_indices[this_unit_id]]
+            median_waveform = median_waveform[:, sparsity.unit_id_to_channel_indices[this_unit_id]]
 
-        tmax, chmax = np.unravel_index(
-            np.argmax(np.abs(median_waveform)), median_waveform.shape
-        )
+        tmax, chmax = np.unravel_index(np.argmax(np.abs(median_waveform)), median_waveform.shape)
         weights = [noise_clip[tmax, chmax] for noise_clip in noise_cluster]
         weights = np.asarray(weights)
         weights = weights / np.sum(weights)
-        weighted_noise_snippet = np.sum(
-            weights * noise_cluster.swapaxes(0, 2), axis=2
-        ).swapaxes(0, 1)
+        weighted_noise_snippet = np.sum(weights * noise_cluster.swapaxes(0, 2), axis=2).swapaxes(0, 1)
 
         # subtract projection onto weighted noise snippet
         for snippet in range(n_snippets):
-            waveforms[snippet, :, :] = _subtract_clip_component(
-                waveforms[snippet, :, :], weighted_noise_snippet
-            )
+            waveforms[snippet, :, :] = _subtract_clip_component(waveforms[snippet, :, :], weighted_noise_snippet)
             noise_cluster[snippet, :, :] = _subtract_clip_component(
                 noise_cluster[snippet, :, :], weighted_noise_snippet
             )
@@ -869,9 +803,7 @@ def simplified_silhouette_score(all_pcs, all_labels, this_unit_id):
 
     pcs_for_this_unit = all_pcs[all_labels == this_unit_id, :]
     centroid_for_this_unit = np.expand_dims(np.mean(pcs_for_this_unit, 0), 0)
-    distances_for_this_unit = scipy.spatial.distance.cdist(
-        centroid_for_this_unit, pcs_for_this_unit
-    )
+    distances_for_this_unit = scipy.spatial.distance.cdist(centroid_for_this_unit, pcs_for_this_unit)
     distance = np.inf
 
     # find centroid of other cluster and measure distances to that rather than pairwise
@@ -879,20 +811,16 @@ def simplified_silhouette_score(all_pcs, all_labels, this_unit_id):
     for label in np.unique(all_labels):
         if label != this_unit_id:
             pcs_for_other_cluster = all_pcs[all_labels == label, :]
-            centroid_for_other_cluster = np.expand_dims(
-                np.mean(pcs_for_other_cluster, 0), 0
-            )
-            distances_for_other_cluster = scipy.spatial.distance.cdist(
-                centroid_for_other_cluster, pcs_for_this_unit
-            )
+            centroid_for_other_cluster = np.expand_dims(np.mean(pcs_for_other_cluster, 0), 0)
+            distances_for_other_cluster = scipy.spatial.distance.cdist(centroid_for_other_cluster, pcs_for_this_unit)
             mean_distance_for_other_cluster = np.mean(distances_for_other_cluster)
             if mean_distance_for_other_cluster < distance:
                 distance = mean_distance_for_other_cluster
                 distances_for_minimum_cluster = distances_for_other_cluster
 
-    sil_distances = (
-        distances_for_minimum_cluster - distances_for_this_unit
-    ) / np.maximum(distances_for_minimum_cluster, distances_for_this_unit)
+    sil_distances = (distances_for_minimum_cluster - distances_for_this_unit) / np.maximum(
+        distances_for_minimum_cluster, distances_for_this_unit
+    )
 
     unit_silhouette_score = np.mean(sil_distances)
     return unit_silhouette_score
@@ -920,9 +848,7 @@ def silhouette_score(all_pcs, all_labels, this_unit_id):
     """
 
     pcs_for_this_unit = all_pcs[all_labels == this_unit_id, :]
-    distances_for_this_unit = scipy.spatial.distance.cdist(
-        pcs_for_this_unit, pcs_for_this_unit
-    )
+    distances_for_this_unit = scipy.spatial.distance.cdist(pcs_for_this_unit, pcs_for_this_unit)
     distance = np.inf
 
     # iterate through all other clusters and do pairwise distance comparisons
@@ -930,17 +856,15 @@ def silhouette_score(all_pcs, all_labels, this_unit_id):
     for label in np.unique(all_labels):
         if label != this_unit_id:
             pcs_for_other_cluster = all_pcs[all_labels == label, :]
-            distances_for_other_cluster = scipy.spatial.distance.cdist(
-                pcs_for_other_cluster, pcs_for_this_unit
-            )
+            distances_for_other_cluster = scipy.spatial.distance.cdist(pcs_for_other_cluster, pcs_for_this_unit)
             mean_distance_for_other_cluster = np.mean(distances_for_other_cluster)
             if mean_distance_for_other_cluster < distance:
                 distance = mean_distance_for_other_cluster
                 distances_for_minimum_cluster = distances_for_other_cluster
 
-    sil_distances = (
-        distances_for_minimum_cluster - distances_for_this_unit
-    ) / np.maximum(distances_for_minimum_cluster, distances_for_this_unit)
+    sil_distances = (distances_for_minimum_cluster - distances_for_this_unit) / np.maximum(
+        distances_for_minimum_cluster, distances_for_this_unit
+    )
 
     unit_silhouette_score = np.mean(sil_distances)
     return unit_silhouette_score
@@ -997,19 +921,13 @@ def _compute_isolation(pcs_target_unit, pcs_other_unit, n_neighbors: int):
         n_neighbors_adjusted = n_neighbors
 
     _, membership_ind = (
-        NearestNeighbors(n_neighbors=n_neighbors_adjusted, algorithm="auto")
-        .fit(pcs_concat)
-        .kneighbors()
+        NearestNeighbors(n_neighbors=n_neighbors_adjusted, algorithm="auto").fit(pcs_concat).kneighbors()
     )
 
     target_nn_in_target = np.sum(label_concat[membership_ind[:n_spikes_target]] == 0)
     other_nn_in_other = np.sum(label_concat[membership_ind[n_spikes_target:]] == 1)
 
-    isolation = (
-        (target_nn_in_target + other_nn_in_other)
-        / (n_spikes_target + n_spikes_other)
-        / n_neighbors_adjusted
-    )
+    isolation = (target_nn_in_target + other_nn_in_other) / (n_spikes_target + n_spikes_other) / n_neighbors_adjusted
 
     return isolation
 
@@ -1097,9 +1015,7 @@ def pca_metrics_one_unit(
         silhouette_method = qm_params["silhouette"]["method"]
         if "simplified" in silhouette_method:
             try:
-                unit_silhouette_score = simplified_silhouette_score(
-                    pcs_flat, labels, unit_id
-                )
+                unit_silhouette_score = simplified_silhouette_score(pcs_flat, labels, unit_id)
             except:
                 unit_silhouette_score = np.nan
             pc_metrics["silhouette"] = unit_silhouette_score
