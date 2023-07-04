@@ -1,3 +1,15 @@
+# CSC-UW changes to vanilla SpikeInterface
+We should aim to one day use the official SpikeInterface!
+
+Detailed comparison: https://github.com/CSC-UW/spikeinterface/compare...wisc/dev
+
+Summary, updated 5/11/2022:
+- Explicitly sets MKL BLAS and LAPACK shared object libraries, which is necessary on Linux per [#199](https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599).
+  - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/1aae5e902c12e0560b54c1dc74fc43c238a3248e)
+  - Perhaps we should submit a PR to spikeinterface / KiloSort install intstructions with info about how to obtain proper BLAS and LAPACK versions, then set the   relevant environment variables in `.bashrc`? Or is there a spikeinterface config file that users can add their BLAS and LAPACK locations to? Or can they be set as a keyword argument somewhere? Like in the Kilosort sorter class? 
+- Allow passing amplitudes directly in compute_amplitude_cutoff (allow using Kilosort amplitudes)
+
+
 # SpikeInterface: a unified framework for spike sorting
 
 <table>
