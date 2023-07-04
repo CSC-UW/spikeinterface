@@ -2,6 +2,12 @@ function kilosort2_5_master(fpath, kilosortPath)
     try
         set(groot,'defaultFigureVisible', 'off');
 
+        disp('Setting latest mkl version');
+        setenv('BLAS_VERSION', '/usr/lib/x86_64-linux-gnu/mkl/libblas.so');
+        setenv('LAPACK_VERSION', '/usr/lib/x86_64-linux-gnu/mkl/liblapack.so');
+        version -blas;
+        version -lapack;
+
         if ~isdeployed
             % prepare for kilosort execution
             addpath(genpath(kilosortPath));
