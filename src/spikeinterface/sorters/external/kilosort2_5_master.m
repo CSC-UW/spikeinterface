@@ -1,12 +1,6 @@
 function kilosort2_5_master(fpath, kilosortPath)
     try
         set(groot,'defaultFigureVisible', 'off');
-        % https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599
-        disp('Setting latest mkl version');
-        setenv('BLAS_VERSION', '/usr/lib/x86_64-linux-gnu/mkl/libblas.so');
-        setenv('LAPACK_VERSION', '/usr/lib/x86_64-linux-gnu/mkl/liblapack.so');
-        version -blas;
-        version -lapack;
 
         if ~isdeployed
             % prepare for kilosort execution
@@ -98,7 +92,7 @@ function kilosort2_5_master(fpath, kilosortPath)
 
         % OPTIONAL: remove double-counted spikes - solves issue in which individual spikes are assigned to multiple templates.
         % See issue 29: https://github.com/MouseLand/Kilosort/issues/29
-        rez = remove_ks2_duplicate_spikes(rez, "overlap_s", 0.0001);
+        %rez = remove_ks2_duplicate_spikes(rez);
 
         % final merges
         rez = find_merges(rez, 1);

@@ -46,7 +46,6 @@ class AppendSegmentRecording(BaseRecording):
     """
 
     def __init__(self, recording_list, sampling_frequency_max_diff=0):
-
         rec0 = recording_list[0]
         sampling_frequency = rec0.get_sampling_frequency()
         dtype = rec0.get_dtype()
@@ -114,7 +113,6 @@ class ConcatenateSegmentRecording(BaseRecording):
     """
 
     def __init__(self, recording_list, ignore_times=True, sampling_frequency_max_diff=0):
-
         one_rec = append_recordings(recording_list, sampling_frequency_max_diff=sampling_frequency_max_diff)
 
         BaseRecording.__init__(self, one_rec.get_sampling_frequency(), one_rec.channel_ids, one_rec.get_dtype())

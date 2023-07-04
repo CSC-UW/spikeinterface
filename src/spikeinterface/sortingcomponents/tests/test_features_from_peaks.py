@@ -60,7 +60,10 @@ def test_features_from_peaks():
 
     # amplitude and peak to peak with multi channels
     d = {"all_channels": True}
-    (amplitude, ptp,) = compute_features_from_peaks(
+    (
+        amplitude,
+        ptp,
+    ) = compute_features_from_peaks(
         recording, peaks, ["amplitude", "ptp"], feature_params={"amplitude": d, "ptp": d}, **job_kwargs
     )
     assert amplitude.shape[0] == amplitude.shape[0]

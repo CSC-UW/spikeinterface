@@ -69,7 +69,6 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
         "minfr_goodchannels": "Minimum firing rate on a 'good' channel",
         "nblocks": "blocks for registration. 0 turns it off, 1 does rigid registration. Replaces 'datashift' option.",
         "sig": "spatial smoothness constant for registration",
-        "lam": "amplitude penalty",
         "freq_min": "High-pass filter cutoff frequency",
         "sigmaMask": "Spatial constant in um for computing residual variance of spike",
         "nPCs": "Number of PCA dimensions",
@@ -217,9 +216,6 @@ class Kilosort2_5Sorter(KilosortBase, BaseSorter):
 
         # drift correction
         ops["do_correction"] = params["do_correction"]
-
-        # Whole preprocessing
-        ops["do_preprocessing"] = params["do_preprocessing"]
 
         ## option for wavelength
         ops["nt0"] = params[

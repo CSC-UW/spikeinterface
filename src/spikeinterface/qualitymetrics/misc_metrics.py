@@ -163,10 +163,7 @@ _default_params["presence_ratio"] = dict(
 
 
 def compute_snrs(
-    waveform_extractor,
-    peak_sign: str = "neg",
-    peak_mode: str = "extremum",
-    random_chunk_kwargs_dict=None,
+    waveform_extractor, peak_sign: str = "neg", peak_mode: str = "extremum", random_chunk_kwargs_dict=None
 ):
     """Compute signal to noise ratio.
 
@@ -195,9 +192,7 @@ def compute_snrs(
         if random_chunk_kwargs_dict is None:
             random_chunk_kwargs_dict = {}
         noise_levels = get_noise_levels(
-            waveform_extractor.recording,
-            return_scaled=waveform_extractor.return_scaled,
-            **random_chunk_kwargs_dict,
+            waveform_extractor.recording, return_scaled=waveform_extractor.return_scaled, **random_chunk_kwargs_dict
         )
 
     assert peak_sign in ("neg", "pos", "both")
@@ -301,9 +296,7 @@ _default_params["isi_violation"] = dict(isi_threshold_ms=1.5, min_isi_ms=0)
 
 
 def compute_refrac_period_violations(
-    waveform_extractor,
-    refractory_period_ms: float = 1.0,
-    censored_period_ms: float = 0.0,
+    waveform_extractor, refractory_period_ms: float = 1.0, censored_period_ms: float = 0.0
 ):
     """Calculates the number of refractory period violations.
 
@@ -358,11 +351,7 @@ def compute_refrac_period_violations(
 
     for seg_index in range(num_segments):
         _compute_rp_violations_numba(
-            nb_rp_violations,
-            spikes[seg_index][0].astype(np.int64),
-            spikes[seg_index][1].astype(np.int32),
-            t_c,
-            t_r,
+            nb_rp_violations, spikes[seg_index][0].astype(np.int64), spikes[seg_index][1].astype(np.int32), t_c, t_r
         )
 
     T = waveform_extractor.get_total_samples()
@@ -473,7 +462,6 @@ _default_params["sliding_rp_violation"] = dict(
 
 def compute_amplitude_cutoffs(
     waveform_extractor,
-    spike_amplitudes=None,
     peak_sign="neg",
     num_histogram_bins=500,
     histogram_smoothing_value=3,
@@ -485,9 +473,6 @@ def compute_amplitude_cutoffs(
     ----------
     waveform_extractor : WaveformExtractor
         The waveform extractor object.
-    spike_amplitudes : dict of int: array-like
-        Dict of the form {<unit_id>: <unit_amplitudes>}.
-        If provided, used to pull amplitudes for each unit.
     peak_sign : {'neg', 'pos', 'both'}
         The sign of the peaks.
     num_histogram_bins : int, default: 100
@@ -525,18 +510,16 @@ def compute_amplitude_cutoffs(
     before = waveform_extractor.nbefore
     extremum_channels_ids = get_template_extremum_channel(waveform_extractor, peak_sign=peak_sign)
 
+    spike_amplitudes = None
     invert_amplitudes = False
-    if spike_amplitudes is None:
-        invert_amplitudes = False
-        if waveform_extractor.is_extension("spike_amplitudes"):
-            amp_calculator = waveform_extractor.load_extension("spike_amplitudes")
-            spike_amplitudes = amp_calculator.get_data(outputs="by_unit")
-            if amp_calculator._params["peak_sign"] == "pos":
-                invert_amplitudes = True
-        else:
-            if peak_sign == "pos":
-                invert_amplitudes = True
-            spike_amplitudes = None
+    if waveform_extractor.is_extension("spike_amplitudes"):
+        amp_calculator = waveform_extractor.load_extension("spike_amplitudes")
+        spike_amplitudes = amp_calculator.get_data(outputs="by_unit")
+        if amp_calculator._params["peak_sign"] == "pos":
+            invert_amplitudes = True
+    else:
+        if peak_sign == "pos":
+            invert_amplitudes = True
 
     all_fraction_missing = {}
     nan_units = []
@@ -557,10 +540,7 @@ def compute_amplitude_cutoffs(
             amplitudes = -amplitudes
 
         fraction_missing = amplitude_cutoff(
-            amplitudes,
-            num_histogram_bins,
-            histogram_smoothing_value,
-            amplitudes_bins_min_ratio,
+            amplitudes, num_histogram_bins, histogram_smoothing_value, amplitudes_bins_min_ratio
         )
         if np.isnan(fraction_missing):
             nan_units.append(unit_id)
@@ -574,10 +554,7 @@ def compute_amplitude_cutoffs(
 
 
 _default_params["amplitude_cutoff"] = dict(
-    peak_sign="neg",
-    num_histogram_bins=100,
-    histogram_smoothing_value=3,
-    amplitudes_bins_min_ratio=5,
+    peak_sign="neg", num_histogram_bins=100, histogram_smoothing_value=3, amplitudes_bins_min_ratio=5
 )
 
 
@@ -896,12 +873,7 @@ def isi_violations(spike_trains, total_duration_s, isi_threshold_s=0.0015, min_i
     return isi_violations_ratio, isi_violations_rate, isi_violations_count
 
 
-def amplitude_cutoff(
-    amplitudes,
-    num_histogram_bins=500,
-    histogram_smoothing_value=3,
-    amplitudes_bins_min_ratio=5,
-):
+def amplitude_cutoff(amplitudes, num_histogram_bins=500, histogram_smoothing_value=3, amplitudes_bins_min_ratio=5):
     """Calculate approximate fraction of spikes missing from a distribution of amplitudes.
 
 
@@ -1083,13 +1055,7 @@ if HAVE_NUMBA:
         return n_v
 
     @numba.jit(
-        (
-            numba.int64[::1],
-            numba.int64[::1],
-            numba.int32[::1],
-            numba.int32,
-            numba.int32,
-        ),
+        (numba.int64[::1], numba.int64[::1], numba.int32[::1], numba.int32, numba.int32),
         nopython=True,
         nogil=True,
         cache=True,
