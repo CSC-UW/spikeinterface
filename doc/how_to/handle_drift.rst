@@ -118,10 +118,10 @@ to load them later.
       'peak_sign': 'neg',
       'detect_threshold': 8.0,
       'exclude_sweep_ms': 0.1,
-      'local_radius_um': 50},
+      'radius_um': 50},
      'select_kwargs': None,
      'localize_peaks_kwargs': {'method': 'grid_convolution',
-      'local_radius_um': 30.0,
+      'radius_um': 30.0,
       'upsampling_um': 3.0,
       'sigma_um': array([ 5. , 12.5, 20. ]),
       'sigma_ms': 0.25,
@@ -204,8 +204,8 @@ A few comments on the figures:
 
         # and plot
         fig = plt.figure(figsize=(14, 8))
-        si.plot_motion(rec, motion_info, figure=fig, depth_lim=(400, 600),
-                       color_amplitude=True, amplitude_cmap='inferno',  scatter_decimate=10)
+        si.plot_motion(motion_info, figure=fig, depth_lim=(400, 600),
+                       color_amplitude=True, amplitude_cmap='inferno', scatter_decimate=10)
         fig.suptitle(f"{preset=}")
 
 
@@ -272,7 +272,7 @@ to display the results.
         #color='black',
         ax.scatter(loc['x'][mask][sl], loc['y'][mask][sl], **color_kargs)
 
-        loc2 = correct_motion_on_peaks(motion_info['peaks'], motion_info['peak_locations'], rec.get_times(),
+        loc2 = correct_motion_on_peaks(motion_info['peaks'], motion_info['peak_locations'], rec.sampling_frequency,
                                        motion_info['motion'], motion_info['temporal_bins'], motion_info['spatial_bins'], direction="y")
 
         ax = axs[1]
