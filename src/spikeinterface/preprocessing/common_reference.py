@@ -137,7 +137,7 @@ class CommonReferenceRecordingSegment(BasePreprocessorSegment):
         self.dtype = dtype
 
         if self.operator == "median":
-            self.operator_func = lambda x: np.median(x, axis=1, out=self.temp)[:, None]
+            self.operator_func = lambda x: np.median(x, axis=0, out=self.temp)[:, None]
         elif self.operator == "average":
             self.operator_func = lambda x: np.mean(x, axis=1, out=self.temp)[:, None]
 
