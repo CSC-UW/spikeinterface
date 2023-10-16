@@ -127,6 +127,10 @@ class FilterRecordingSegment(BasePreprocessorSegment):
         self.dtype = dtype
 
     def get_traces(self, start_frame, end_frame, channel_indices):
+
+        if start_frame > end_frame or start_frame > self.parent_recording_segment.get_num_samples():
+            return self.parent_recording_segment.get_traces(0, 0, channel_indices)
+
         traces_chunk, left_margin, right_margin = get_chunk_with_margin(
             self.parent_recording_segment,
             start_frame,
