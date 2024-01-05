@@ -1,4 +1,4 @@
-from typing import List, Union
+from __future__ import annotations
 
 import numpy as np
 
@@ -18,6 +18,7 @@ class UnitsSelectionSorting(BaseSorting):
             unit_ids = parent_sorting.get_unit_ids()
         if renamed_unit_ids is None:
             renamed_unit_ids = unit_ids
+        assert len(renamed_unit_ids) == len(np.unique(renamed_unit_ids)), "renamed_unit_ids must be unique!"
 
         self._parent_sorting = parent_sorting
         self._unit_ids = np.asarray(unit_ids)
@@ -55,8 +56,8 @@ class UnitsSelectionSortingSegment(BaseSortingSegment):
     def get_unit_spike_train(
         self,
         unit_id,
-        start_frame: Union[int, None] = None,
-        end_frame: Union[int, None] = None,
+        start_frame: int | None = None,
+        end_frame: int | None = None,
     ) -> np.ndarray:
         unit_id_parent = self._ids_conversion[unit_id]
         times = self._parent_segment.get_unit_spike_train(unit_id_parent, start_frame, end_frame)

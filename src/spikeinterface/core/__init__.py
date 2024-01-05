@@ -1,6 +1,6 @@
 from .base import load_extractor  # , load_extractor_from_dict, load_extractor_from_json, load_extractor_from_pickle
 from .baserecording import BaseRecording, BaseRecordingSegment
-from .basesorting import BaseSorting, BaseSortingSegment
+from .basesorting import BaseSorting, BaseSortingSegment, SpikeVectorSortingSegment
 from .baseevent import BaseEvent, BaseEventSegment
 from .basesnippets import BaseSnippets, BaseSnippetsSegment
 from .baserecordingsnippets import BaseRecordingSnippets
@@ -9,7 +9,7 @@ from .baserecordingsnippets import BaseRecordingSnippets
 from .binaryrecordingextractor import BinaryRecordingExtractor, read_binary
 from .npzsortingextractor import NpzSortingExtractor, read_npz_sorting
 from .numpyextractors import NumpyRecording, NumpySorting, SharedMemorySorting, NumpyEvent, NumpySnippets
-from .zarrrecordingextractor import ZarrRecordingExtractor, read_zarr, get_default_zarr_compressor
+from .zarrextractors import ZarrRecordingExtractor, ZarrSortingExtractor, read_zarr, get_default_zarr_compressor
 from .binaryfolder import BinaryFolderRecording, read_binary_folder
 from .sortingfolder import NumpyFolderSorting, NpzFolderSorting, read_numpy_sorting_folder, read_npz_folder
 from .npysnippetsextractor import NpySnippetsExtractor, read_npy_snippets
@@ -28,12 +28,20 @@ from .unitsaggregationsorting import UnitsAggregationSorting, aggregate_units
 from .generate import (
     generate_recording,
     generate_sorting,
+    add_synchrony_to_sorting,
     create_sorting_npz,
     generate_snippets,
     synthesize_random_firings,
     inject_some_duplicate_units,
     inject_some_split_units,
     synthetize_spike_train_bad_isi,
+    generate_templates,
+    NoiseGeneratorRecording,
+    noise_generator_recording,
+    generate_recording_by_size,
+    InjectTemplatesRecording,
+    inject_templates,
+    generate_ground_truth_recording,
 )
 
 # utils to append and concatenate segment (equivalent to OLD MultiRecordingTimeExtractor)
@@ -86,6 +94,8 @@ from .recording_tools import (
     get_chunk_with_margin,
     order_channels_by_depth,
 )
+from .sorting_tools import spike_vector_to_spike_trains
+
 from .waveform_tools import extract_waveforms_to_buffers
 from .snippets_tools import snippets_from_sorting
 
@@ -109,7 +119,7 @@ from .old_api_utils import (
 )
 
 # templates addition
-from .injecttemplates import InjectTemplatesRecording, InjectTemplatesRecordingSegment, inject_templates
+# from .injecttemplates import InjectTemplatesRecording, InjectTemplatesRecordingSegment, inject_templates
 
 # template tools
 from .template_tools import (

@@ -167,15 +167,15 @@ class NeoBaseRecordingExtractor(_NeoBaseExtractor, BaseRecording):
 
         Parameters
         ----------
-        stream_id : Optional[str], default=None
+        stream_id : Optional[str], default: None
             The ID of the stream to extract from the data.
-        stream_name : Optional[str], default=None
+        stream_name : Optional[str], default: None
             The name of the stream to extract from the data.
-        block_index : Optional[int], default=None
+        block_index : Optional[int], default: None
             The index of the block to extract from the data.
-        all_annotations : bool, default=False
+        all_annotations : bool, default: False
             If True, include all annotations in the extracted data.
-        use_names_as_ids : Optional[bool], default=None
+        use_names_as_ids : Optional[bool], default: None
             If True, use channel names as IDs. Otherwise, use default IDs.
         neo_kwargs : Dict[str, Any]
             Additional keyword arguments to pass to the NeoBaseExtractor for initialization.
@@ -312,7 +312,8 @@ class NeoRecordingSegment(BaseRecordingSegment):
         num_samples = self.neo_reader.get_signal_size(
             block_index=self.block_index, seg_index=self.segment_index, stream_index=self.stream_index
         )
-        return num_samples
+
+        return int(num_samples)
 
     def get_traces(
         self,
@@ -402,10 +403,9 @@ class NeoBaseSortingExtractor(_NeoBaseExtractor, BaseSorting):
 
         Parameters
         ----------
-        stream_id : str, optional
+        stream_id : str, default: None
             The ID of the stream from which to infer the sampling frequency. If not provided,
-            the function will look for a common sampling frequency across all streams.
-            (default is None)
+            the function will look for a common sampling frequency across all streams
 
         Returns
         -------
@@ -462,7 +462,7 @@ class NeoBaseSortingExtractor(_NeoBaseExtractor, BaseSorting):
                 f"sampling_frequency = {sampling_frequency} \n"
                 "Corresponding to the following stream_id: \n"
                 f"stream_id = {stream_id} \n"
-                "To avoid this warning pass explicitly the sampling frequency or the stream_id"
+                "To avoid this warning pass explicitly the sampling frequency or the stream_id "
                 "when initializing the sorting extractor. \n"
                 "The following stream_ids with corresponding sampling frequencies were found: \n"
                 f"stream_id_to_sampling_frequencies = {stream_id_to_sampling_frequencies} \n"
@@ -472,8 +472,8 @@ class NeoBaseSortingExtractor(_NeoBaseExtractor, BaseSorting):
             instructions_for_user = (
                 "Multiple streams ids with different sampling frequencies found in the file: \n"
                 f"{stream_id_to_sampling_frequencies} \n"
-                f"Please specify one of the following sampling frequencies"
-                "When initializing the sorting extractor with the sampling frequency parameter."
+                f"Please specify one of the sampling frequencies above "
+                "when initializing the sorting extractor with the sampling frequency parameter."
             )
             raise ValueError(instructions_for_user)
 
@@ -491,7 +491,7 @@ class NeoBaseSortingExtractor(_NeoBaseExtractor, BaseSorting):
         ----------
         segment_index : int
             The index of the segment in which to look for the stream.
-        stream_id : str, optional
+        stream_id : str, default: None
             The ID of the stream from which to infer t_start. If not provided,
             the function will look for streams with a matching sampling frequency.
 
@@ -546,7 +546,7 @@ class NeoBaseSortingExtractor(_NeoBaseExtractor, BaseSorting):
                 f"t_start = {t_start} \n"
                 "Corresponding to the following stream_id: \n"
                 f"stream_id = {stream_id} \n"
-                "To avoid this warning pass explicitly the stream_id"
+                "To avoid this warning pass explicitly the stream_id "
                 "when initializing the sorting extractor. \n"
                 "The following stream_ids with corresponding t_starts were found: \n"
                 f"{stream_id_to_t_start} \n"

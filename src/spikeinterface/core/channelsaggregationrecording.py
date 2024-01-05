@@ -1,4 +1,4 @@
-from typing import List, Union
+from __future__ import annotations
 
 import numpy as np
 
@@ -104,11 +104,11 @@ class ChannelsAggregationRecordingSegment(BaseRecordingSegment):
         times_kargs0 = parent_segment0.get_times_kwargs()
         if times_kargs0["time_vector"] is None:
             for ps in parent_segments:
-                assert ps.get_times_kwargs()["time_vector"] is None, "All segment should not have times set"
+                assert ps.get_times_kwargs()["time_vector"] is None, "All segments should not have times set"
         else:
             for ps in parent_segments:
                 assert ps.get_times_kwargs()["t_start"] == times_kargs0["t_start"], (
-                    "All segment should have the same " "t_start"
+                    "All segments should have the same " "t_start"
                 )
 
         BaseRecordingSegment.__init__(self, **times_kargs0)
@@ -121,9 +121,9 @@ class ChannelsAggregationRecordingSegment(BaseRecordingSegment):
 
     def get_traces(
         self,
-        start_frame: Union[int, None] = None,
-        end_frame: Union[int, None] = None,
-        channel_indices: Union[List, None] = None,
+        start_frame: int | None = None,
+        end_frame: int | None = None,
+        channel_indices: list | None = None,
     ) -> np.ndarray:
         return_all_channels = False
         if channel_indices is None:
