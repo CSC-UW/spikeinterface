@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import Iterable, Union
 
 import numpy as np
 
-from spikeinterface.core import BaseRecording, BaseRecordingSegment, get_chunk_with_margin
+from spikeinterface.core import BaseRecording, BaseRecordingSegment, get_chunk_with_margin, normal_pdf
 from spikeinterface.core.core_tools import define_function_from_class
 from .basepreprocessor import BasePreprocessor, BasePreprocessorSegment
 
@@ -48,8 +50,6 @@ class GaussianFilterRecording(BasePreprocessor):
 
         if freq_min is None and freq_max is None:
             raise ValueError("At least one of `freq_min`,`freq_max` should be specified.")
-        if freq_min is not None and freq_max is not None and freq_max <= freq_min:
-            raise ValueError("Expecting `freq_min`<`freq_max`.")
 
         for parent_segment in recording._recording_segments:
             self.add_recording_segment(GaussianFilterRecordingSegment(parent_segment, freq_min, freq_max, margin_sd))
@@ -104,7 +104,7 @@ class GaussianFilterRecordingSegment(BasePreprocessorSegment):
         else:
             neg_factor = np.zeros((traces.shape[0],))
 
-        filtered_fft = traces_fft * (pos_factor - neg_factor)[:, None]
+        filtered_fft = traces_fft * (pos_factor * (1 - neg_factor))[:, None]
         filtered_traces = np.real(np.fft.ifft(filtered_fft, axis=0))
 
         if np.issubdtype(dtype, np.integer):
@@ -122,16 +122,14 @@ class GaussianFilterRecordingSegment(BasePreprocessorSegment):
         sf = self.parent_recording_segment.sampling_frequency
         faxis = np.fft.fftfreq(N, d=1 / sf)
 
-        from scipy.stats import norm
-
         if cutoff_f > sf / 8:  # The Fourier transform of a Gaussian with a very low sigma isn't a Gaussian.
             sigma = sf / (2 * np.pi * cutoff_f)
-            limit = int(round(6 * sigma)) + 1
+            limit = int(round(5 * sigma)) + 1
             xaxis = np.arange(-limit, limit + 1) / sigma
-            gaussian = norm.pdf(xaxis) / sigma
+            gaussian = normal_pdf(xaxis) / sigma
             gaussian = np.abs(np.fft.fft(gaussian, n=N))
         else:
-            gaussian = norm.pdf(faxis / cutoff_f) * np.sqrt(2 * np.pi)
+            gaussian = normal_pdf(faxis / cutoff_f) * np.sqrt(2 * np.pi)
 
         if cutoff_f not in self.cached_gaussian:
             self.cached_gaussian[cutoff_f] = dict()
