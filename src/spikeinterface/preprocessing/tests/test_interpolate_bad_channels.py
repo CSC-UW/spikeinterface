@@ -7,9 +7,9 @@ import spikeinterface.preprocessing as spre
 import spikeinterface.extractors as se
 from spikeinterface.core.generate import generate_recording
 
-try:
+try:  # TODO: Remove? Not sure if this was Tom's addition or from vanilla SI.
     import spikeglx
-    import neurodsp.voltage as voltage
+    import ibldsp.voltage as voltage
 
     HAVE_IBL_NPIX = True
 except ImportError:

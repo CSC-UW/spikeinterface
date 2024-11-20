@@ -8,11 +8,11 @@ from probeinterface import generate_linear_probe
 from spikeinterface.core import generate_recording
 from spikeinterface.preprocessing import detect_bad_channels, highpass_filter
 
-try:
+try:  # TODO: Remove? Not sure if this was Tom's addition or from vanilla SI.
     # WARNING : this is not this package https://pypi.org/project/neurodsp/
     # BUT this one https://github.com/int-brain-lab/ibl-neuropixel
     # pip install ibl-neuropixel
-    import neurodsp.voltage
+    import ibldsp.voltage
 
     HAVE_NPIX = True
 except:  # Catch relevant exception
@@ -159,7 +159,7 @@ def test_detect_bad_channels_ibl(num_channels):
     for i, random_chunk in enumerate(random_data):
         traces_uV = random_chunk.T
         traces_V = traces_uV * 1e-6
-        channel_flags, _ = neurodsp.voltage.detect_bad_channels(
+        channel_flags, _ = ibldsp.voltage.detect_bad_channels(
             traces_V,
             recording.get_sampling_frequency(),
             psd_hf_threshold=psd_cutoff,

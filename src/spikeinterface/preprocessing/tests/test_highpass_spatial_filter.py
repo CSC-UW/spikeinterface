@@ -9,9 +9,9 @@ import spikeinterface.extractors as se
 from spikeinterface.core import generate_recording
 import spikeinterface.widgets as sw
 
-try:
+try:  # TODO: Remove? Not sure if this was Tom's addition or from vanilla SI.
     import spikeglx
-    import neurodsp.voltage as voltage
+    import ibldsp.voltage as voltage
 
     HAVE_IBL_NPIX = True
 except ImportError:
