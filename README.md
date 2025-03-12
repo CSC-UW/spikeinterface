@@ -6,14 +6,14 @@ Detailed comparison: https://github.com/CSC-UW/spikeinterface/compare...wisc/dev
 Summary, updated 3/12/2025:
 - Explicitly sets MKL BLAS and LAPACK shared object libraries, which is necessary on Linux per [#199](https://github.com/MouseLand/Kilosort/issues/199#issuecomment-754971599).
   - Commits: [1](https://github.com/CSC-UW/spikeinterface/commit/1aae5e902c12e0560b54c1dc74fc43c238a3248e)
-  - This should no longer be necessary, per [#893](https://github.com/SpikeInterface/spikeinterface/pull/893). 
+  - This should no longer be necessary, per [#893](https://github.com/SpikeInterface/spikeinterface/pull/893).
 - Allow passing amplitudes directly in compute_amplitude_cutoff (allow using Kilosort amplitudes)
   - I assume that what we are actually "passing" to `compute_amplitude_cutoff` is the Kilosort template scarling? See [here](https://spikeinterface.readthedocs.io/en/stable/modules/qualitymetrics/amplitude_cutoff.html).
   - It looks like [#1485](https://github.com/SpikeInterface/spikeinterface/pull/1485) was intended to allow this, but was never merged.
     But then [#1503](https://github.com/SpikeInterface/spikeinterface/pull/1503) was accepted, and should have addressed this.
     What we need should now be available at `si.postprocessing.amplitude_scalings`, I think.
 
-It seems to me, then, that this branch of this fork should not be necessary, and the official SpikeInterface should suffice for sorting. 
+It seems to me, then, that this branch of this fork should not be necessary, and the official SpikeInterface should suffice for historical sorts. 
 
 # SpikeInterface: a unified framework for spike sorting
 
